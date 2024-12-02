@@ -2,6 +2,7 @@ module [parse, solve1, solve2]
 
 import util.StrUtil
 import util.ListUtil
+import util.ResultUtil
 
 Input : (List U64, List U64)
 
@@ -10,8 +11,7 @@ parse = \input ->
     Str.splitOn input "\n"
     |> List.walkTry ([], []) \(ls, rs), line ->
         (lStr, rStr) = try StrUtil.splitTwo line "   "
-        l = try Str.toU64 lStr
-        r = try Str.toU64 rStr
+        (l, r) = try ResultUtil.toTuple (Str.toU64 lStr) (Str.toU64 rStr)
         (List.append ls l, List.append rs r) |> Ok
 
 solve1 : Input -> U64
@@ -20,6 +20,4 @@ solve1 = \(ls, rs) ->
     |> List.sum
 
 solve2 : Input -> U64
-solve2 = \(ls, rs) ->
-    ListUtil.sumBy ls \l -> ListUtil.countIn rs l
-        |> Num.mul l
+solve2 = \(ls, rs) -> ListUtil.sumBy ls \l -> l * ListUtil.countIn rs l
