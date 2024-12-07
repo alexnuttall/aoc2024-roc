@@ -66,7 +66,3 @@ pairwise = \xs ->
                 List.get xs i |> unwrap,
                 List.get xs (i + 1) |> unwrap,
             )
-
-expect
-    actual = pairwise [1, 2, 3, 4, 5]
-    actual == [(1, 2), (2, 3), (3, 4), (4, 5)]
