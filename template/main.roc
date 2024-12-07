@@ -1,9 +1,11 @@
 app [main] {
     pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
     util: "../util/util.roc",
+    answers: "../answers/answers.roc",
 }
 
 import "./input.txt" as inputData : Str
+import answers.A exposing [answers]
 
 main = Task.ok {}
 
