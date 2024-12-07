@@ -1,16 +1,11 @@
-app [main] {
-    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
+app [part1, part2] {
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
-    answers: "../answers/answers.roc",
 }
 
-import "./input.txt" as inputData : Str
 import util.StrUtil
 import util.ResultUtil
 import util.ListUtil
-import answers.A exposing [answers]
-
-main = Task.ok {}
 
 Input : List Equation
 Equation : (U64, List U64)
@@ -28,45 +23,67 @@ parse = \str ->
 loop1 : List U64, U64, U64 -> Bool
 loop1 = \rem, total, target ->
     when rem is
-        [] -> total == target
-        _ if total > target -> Bool.false
-        [a, .. as rest] ->
-            loop1 rest (total + a) target
-            || (loop1 rest (total * a) target)
+        [] ->
+            total == target
 
-solve1 : List Equation -> U64
-solve1 = \equations ->
-    ListUtil.sumBy equations \(target, xs) ->
+        _ if total > target ->
+            Bool.false
+
+        [a, .. as next] ->
+            when {} is
+                _ if loop1 next (total + a) target -> Bool.true
+                _ if loop1 next (total * a) target -> Bool.true
+                _ -> Bool.false
+
+part1 : Str -> Result Str _
+part1 = \input ->
+    parse input
+    |> try
+    |> ListUtil.sumBy \(target, xs) ->
         when xs is
             [first, .. as rest] ->
                 if loop1 rest first target then target else 0
 
             _ -> 0
+    |> Num.toStr
+    |> Ok
 
 concat : U64, U64 -> U64
 concat = \a, b ->
-    "$(Num.toStr a)$(Num.toStr b)"
-    |> Str.toU64
-    |> Result.withDefault 0
+    getMulti = \multiplier, rem ->
+        nextRem = Num.divTrunc rem 10
+        if nextRem == 0 then multiplier else getMulti (multiplier * 10) nextRem
+
+    getMulti 10 b |> Num.mul a |> Num.add b
 
 loop2 : List U64, U64, U64 -> Bool
 loop2 = \rem, total, target ->
     when rem is
-        [] -> total == target
-        _ if total > target -> Bool.false
-        [a, .. as rest] ->
-            loop2 rest (total + a) target
-            || (loop2 rest (total * a) target)
-            || (loop2 rest (concat total a) target)
+        [] ->
+            total == target
 
-solve2 : List Equation -> U64
-solve2 = \equations ->
-    ListUtil.sumBy equations \(target, xs) ->
+        _ if total > target ->
+            Bool.false
+
+        [a, .. as next] ->
+            when {} is
+                _ if loop2 next (total + a) target -> Bool.true
+                _ if loop2 next (total * a) target -> Bool.true
+                _ if loop2 next (concat total a) target -> Bool.true
+                _ -> Bool.false
+
+part2 : Str -> Result Str _
+part2 = \input ->
+    parse input
+    |> try
+    |> ListUtil.sumBy \(target, xs) ->
         when xs is
             [first, .. as rest] ->
                 if loop2 rest first target then target else 0
 
             _ -> 0
+    |> Num.toStr
+    |> Ok
 
 exampleData =
     """
@@ -82,17 +99,9 @@ exampleData =
     """
 
 expect
-    actual = parse exampleData |> Result.map solve1
-    actual == Ok 3749
+    actual = part1 exampleData
+    actual == Ok "3749"
 
 expect
-    actual = parse inputData |> Result.map solve1
-    actual == Ok answers.day07.part1
-
-expect
-    actual = parse exampleData |> Result.map solve2
-    actual == Ok 11387
-
-expect
-    actual = parse inputData |> Result.map solve2
-    actual == Ok answers.day07.part2
+    actual = part2 exampleData
+    actual == Ok "11387"
