@@ -23,34 +23,6 @@ parse = \str ->
             (Str.toU64 targetStr)
             (Str.splitOn numsString " " |> List.mapTry Str.toU64)
 
-loop1 : List U64, U64, U64 -> Bool
-loop1 = \rem, total, target ->
-    when rem is
-        [] ->
-            total == target
-
-        _ if total > target ->
-            Bool.false
-
-        [a, .. as next] ->
-            when {} is
-                _ if loop1 next (total + a) target -> Bool.true
-                _ if loop1 next (total * a) target -> Bool.true
-                _ -> Bool.false
-
-part1 : Str -> Result Str _
-part1 = \input ->
-    parse input
-    |> try
-    |> ListUtil.sumBy \(target, xs) ->
-        when xs is
-            [first, .. as rest] ->
-                if loop1 rest first target then target else 0
-
-            _ -> 0
-    |> Num.toStr
-    |> Ok
-
 concat : U64, U64 -> U64
 concat = \a, b ->
     getMulti = \multiplier, rem ->
@@ -59,34 +31,38 @@ concat = \a, b ->
 
     getMulti 10 b |> Num.mul a |> Num.add b
 
-loop2 : List U64, U64, U64 -> Bool
-loop2 = \rem, total, target ->
-    when rem is
-        [] ->
-            total == target
+solve : Input, Bool -> Result Str _
+solve = \input, enableConcat ->
+    loop = \rem, total, target ->
+        when rem is
+            [] ->
+                if total == target then Ok target else Err Missed
 
-        _ if total > target ->
-            Bool.false
+            _ if total > target ->
+                Err Missed
 
-        [a, .. as next] ->
-            when {} is
-                _ if loop2 next (total + a) target -> Bool.true
-                _ if loop2 next (total * a) target -> Bool.true
-                _ if loop2 next (concat total a) target -> Bool.true
-                _ -> Bool.false
+            [a, .. as next] ->
+                loop next (total + a) target
+                |> Result.onErr \_ -> loop next (total * a) target
+                |> Result.onErr \_ ->
+                    if enableConcat then
+                        loop next (concat total a) target
+                    else
+                        Err Missed
+                |> Result.onErr \_ -> Err Missed
 
-part2 : Str -> Result Str _
-part2 = \input ->
-    parse input
-    |> try
-    |> ListUtil.sumBy \(target, xs) ->
+    ListUtil.sumBy input \(target, xs) ->
         when xs is
-            [first, .. as rest] ->
-                if loop2 rest first target then target else 0
-
+            [first, .. as rest] -> loop rest first target |> Result.withDefault 0
             _ -> 0
     |> Num.toStr
     |> Ok
+
+part1 : Str -> Result Str _
+part1 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.false
+
+part2 : Str -> Result Str _
+part2 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.true
 
 exampleData =
     """
