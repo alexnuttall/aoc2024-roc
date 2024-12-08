@@ -48,18 +48,13 @@ antinodesOnce = \bounds ->
         ]
         |> List.keepIf \pos -> inBounds bounds pos
 
-antinodesFromGroup : List Pos, Resonance -> Set Pos
-antinodesFromGroup = \group, resonance ->
-    ListUtil.pairs group
-    |> List.joinMap resonance
-    |> Set.fromList
-
 countUniqueAntinodes : Matrix, (Bounds -> Resonance) -> U64
 countUniqueAntinodes = \matrix, fn ->
-    resonance = getBounds matrix |> fn
-
     findNodes matrix
-    |> List.map \group -> antinodesFromGroup group resonance
+    |> List.map \group ->
+        ListUtil.pairs group
+        |> List.joinMap (getBounds matrix |> fn)
+        |> Set.fromList
     |> ListUtil.joinSets
     |> Set.len
 
