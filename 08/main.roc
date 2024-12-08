@@ -11,36 +11,37 @@ import answers.A exposing [answers]
 
 Frequency : U8
 Matrix : List (List Frequency)
-Pos : (I64, I64)
-Nodes : Dict Frequency (List Pos)
-Bounds : { height : I64, width : I64 }
-Resonance : Pos, Pos -> List Pos
+Pos : (I32, I32)
+NodeGroups : List (List Pos)
+Bounds : { height : I32, width : I32 }
+Resonance : (Pos, Pos) -> List Pos
 
 parse : Str -> Matrix
 parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
 
-findNodes : Matrix -> Nodes
+findNodes : Matrix -> NodeGroups
 findNodes = \matrix ->
     List.walkWithIndex matrix (Dict.empty {}) \dict, row, y ->
         List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
             when cell is
                 '.' -> rowDict
-                f -> Dict.insert rowDict (Num.toI64 x, Num.toI64 y) f
+                f -> Dict.insert rowDict (Num.toI32 x, Num.toI32 y) f
         |> Dict.insertAll dict
     |> DictUtil.invert
+    |> Dict.values
 
 getBounds : Matrix -> Bounds
 getBounds = \matrix -> {
-    height: List.len matrix |> Num.toI64,
-    width: List.get matrix 0 |> Result.withDefault [] |> List.len |> Num.toI64,
+    height: List.len matrix |> Num.toI32,
+    width: List.get matrix 0 |> Result.withDefault [] |> List.len |> Num.toI32,
 }
 
 inBounds : Bounds, Pos -> Bool
 inBounds = \{ height, width }, (x, y) -> x >= 0 && x < width && y >= 0 && y < height
 
-antinodesOnce : Bounds -> (Pos, Pos -> List Pos)
+antinodesOnce : Bounds -> Resonance
 antinodesOnce = \bounds ->
-    \(ax, ay), (bx, by) ->
+    \((ax, ay), (bx, by)) ->
         [
             (ax - (ax - bx) * 2, ay - (ay - by) * 2),
             (bx - (bx - ax) * 2, by - (by - ay) * 2),
@@ -50,7 +51,7 @@ antinodesOnce = \bounds ->
 antinodesFromGroup : List Pos, Resonance -> Set Pos
 antinodesFromGroup = \group, resonance ->
     ListUtil.pairs group
-    |> List.joinMap \(a, b) -> resonance a b
+    |> List.joinMap resonance
     |> Set.fromList
 
 countUniqueAntinodes : Matrix, (Bounds -> Resonance) -> U64
@@ -58,7 +59,6 @@ countUniqueAntinodes = \matrix, fn ->
     resonance = getBounds matrix |> fn
 
     findNodes matrix
-    |> Dict.values
     |> List.map \group -> antinodesFromGroup group resonance
     |> ListUtil.joinSets
     |> Set.len
@@ -66,21 +66,19 @@ countUniqueAntinodes = \matrix, fn ->
 part1 : Str -> Result Str _
 part1 = \input -> parse input |> countUniqueAntinodes antinodesOnce |> Num.toStr |> Ok
 
-antinodesRecurring : Bounds -> (Pos, Pos -> List Pos)
+antinodesRecurring : Bounds -> Resonance
 antinodesRecurring = \bounds ->
-
-    resonateDirection : List Pos, Pos, (I64, I64) -> List Pos
-    resonateDirection = \acc, (x, y), (xDelta, yDelta) ->
-        next = (x - xDelta, y - yDelta)
-        if inBounds bounds next then
-            List.append acc next
-            |> resonateDirection next (xDelta, yDelta)
-        else
-            acc
-
-    \(ax, ay), (bx, by) ->
+    \((ax, ay), (bx, by)) ->
         deltaA = (ax - bx, ay - by)
         deltaB = (bx - ax, by - ay)
+
+        resonateDirection = \acc, (x, y), (xDelta, yDelta) ->
+            next = (x - xDelta, y - yDelta)
+            if inBounds bounds next then
+                List.append acc next
+                |> resonateDirection next (xDelta, yDelta)
+            else
+                acc
 
         [
             resonateDirection [] (ax, ay) deltaA,
