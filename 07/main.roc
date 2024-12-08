@@ -1,11 +1,14 @@
 app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
+    answers: "../answers/answers.roc",
 }
 
+import "./input.txt" as inputData : Str
 import util.StrUtil
 import util.ResultUtil
 import util.ListUtil
+import answers.A exposing [answers]
 
 Input : List Equation
 Equation : (U64, List U64)
@@ -103,5 +106,13 @@ expect
     actual == Ok "3749"
 
 expect
+    actual = part1 inputData
+    actual == Ok answers.day07.part1
+
+expect
     actual = part2 exampleData
     actual == Ok "11387"
+
+expect
+    actual = part2 inputData
+    actual == Ok answers.day07.part2

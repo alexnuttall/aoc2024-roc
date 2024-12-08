@@ -1,21 +1,23 @@
-app [main] {
-    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
+app [part1, part2] {
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
 
-import "./input.txt" as inputData : List U8
+import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
-
-main = Task.ok {}
 
 Grid : Dict Pos U8
 Pos : (I64, I64)
 Orientation : [N, E, S, W]
-Matrix : List (List U8)
 
-parse : List U8 -> Matrix
-parse = \bytes -> List.splitOn bytes '\n'
+parse : Str -> Grid
+parse = \str -> Str.splitOn str "\n"
+    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
+        Str.toUtf8 row
+        |> List.walkWithIndex (Dict.empty {}) \rowDict, cell, x ->
+            Dict.insert rowDict (Num.toI64 x, Num.toI64 y) cell
+        |> Dict.insertAll dict
 
 findGuard : Grid -> Result Pos [NotFound]
 findGuard = \grid ->
@@ -60,46 +62,36 @@ patrol = \grid, current, orientation, seen ->
         Err _ ->
             seen |> Ok
 
-toDict = \matrix ->
-    List.walkWithIndex matrix (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
-            Dict.insert rowDict (Num.toI64 x, Num.toI64 y) cell
-        |> Dict.insertAll dict
-
-solve1 : Matrix -> Result U64 _
-solve1 = \matrix ->
-    grid = toDict matrix
+part1 : Str -> Result Str _
+part1 = \str ->
+    grid = parse str
     start = try findGuard grid
-    orientation = N
-    seen = Set.single (start, orientation)
+    seen = Set.single (start, N)
 
-    path = try patrol grid start orientation seen
-
-    Set.map path .0
+    try patrol grid start N seen
+    |> Set.map .0
     |> Set.len
+    |> Num.toStr
     |> Ok
 
-solve2 : Matrix -> Result U64 _
-solve2 = \matrix ->
-    grid = toDict matrix
+part2 : Str -> Result Str _
+part2 = \str ->
+    grid = parse str
     start = try findGuard grid
-    orientation = N
-    seen = Set.single (start, orientation)
 
-    Dict.walk grid 0 \count, pos, cell ->
-        if cell == '#' || cell == '^' then
-            count
-        else
-            loopResult =
-                Dict.insert grid pos '#'
-                |> patrol start orientation seen
-
-            when loopResult is
-                Ok _ -> count
-                Err Looped -> count + 1
+    try patrol grid start N (Set.empty {})
+    |> Set.map .0
+    |> Set.walk 0 \count, pos ->
+        when
+            Dict.insert grid pos '#'
+            |> patrol start N (Set.empty {})
+        is
+            Ok _ -> count
+            Err Looped -> count + 1
+    |> Num.toStr
     |> Ok
 
-exampleData = Str.toUtf8
+exampleData =
     """
     ....#.....
     .........#
@@ -114,17 +106,17 @@ exampleData = Str.toUtf8
     """
 
 expect
-    actual = parse exampleData |> solve1
-    actual == Ok 41
+    actual = part1 exampleData
+    actual == Ok "41"
 
 expect
-    actual = parse inputData |> solve1
+    actual = part1 inputData
     actual == Ok answers.day06.part1
 
 expect
-    actual = parse exampleData |> solve2
-    actual == Ok 6
+    actual = part2 exampleData
+    actual == Ok "6"
 
 expect
-    actual = parse inputData |> solve2
+    actual = part2 inputData
     actual == Ok answers.day06.part2

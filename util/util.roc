@@ -2,5 +2,5 @@ package [
     StrUtil,
     ListUtil,
     DictUtil,
-    ResultUtil
+    ResultUtil,
 ] {}

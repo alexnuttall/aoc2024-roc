@@ -7,7 +7,9 @@ module [
     partition,
     partitionWithIndex,
     slidingWindow,
-    pairwise
+    pairwise,
+    pairs,
+    joinSets
 ]
 
 import Internal exposing [upsertDict, id, unwrap]
@@ -33,12 +35,18 @@ counts = \xs -> countBy xs id
 partition : List a, (a -> Bool) -> (List a, List a)
 partition = \xs, predicate ->
     List.walk xs ([], []) \(true, false), x ->
-        if predicate x then (List.append true x, false) else (true, List.append false x)
+        if predicate x then
+            (List.append true x, false)
+        else
+            (true, List.append false x)
 
 partitionWithIndex : List a, (a -> Bool) -> (List (U64, a), List (U64, a))
 partitionWithIndex = \xs, predicate ->
     List.walkWithIndex xs ([], []) \(true, false), x, i ->
-        if predicate x then (List.append true (i, x), false) else (true, List.append false (i, x))
+        if predicate x then
+            (List.append true (i, x), false)
+        else
+            (true, List.append false (i, x))
 
 slidingWindow : List a, Int b -> List (List a)
 slidingWindow = \xs, windowLen ->
@@ -66,3 +74,17 @@ pairwise = \xs ->
                 List.get xs i |> unwrap,
                 List.get xs (i + 1) |> unwrap,
             )
+
+pairs : List a -> List (a, a)
+pairs = \xs ->
+    len = List.len xs
+    List.mapWithIndex xs \x, i ->
+        sliceLen = len - i - 1
+        (x, List.takeLast xs sliceLen)
+    |> List.joinMap \(a, bs) ->
+        List.map bs \b -> (a, b)
+
+joinSets : List (Set a) -> Set a
+joinSets = \xs ->
+    List.walk xs (Set.empty {}) \acc, set ->
+        Set.union acc set
