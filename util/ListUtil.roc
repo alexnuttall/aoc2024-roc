@@ -40,28 +40,6 @@ partition = \xs, predicate ->
         else
             (true, List.append false x)
 
-partitionWithIndex : List a, (a -> Bool) -> (List (U64, a), List (U64, a))
-partitionWithIndex = \xs, predicate ->
-    List.walkWithIndex xs ([], []) \(true, false), x, i ->
-        if predicate x then
-            (List.append true (i, x), false)
-        else
-            (true, List.append false (i, x))
-
-slidingWindow : List a, Int b -> List (List a)
-slidingWindow = \xs, windowLen ->
-    listLen = List.len xs
-    when Num.toU64Checked windowLen is
-        Err OutOfBounds -> []
-        Ok posWindowLen ->
-            when Num.subChecked listLen posWindowLen is
-                Err Overflow -> []
-                Ok 0 -> []
-                Ok len ->
-                    List.range { start: At 0, end: Length (len + 1) }
-                    |> List.map \start ->
-                        List.sublist xs { start, len: posWindowLen }
-
 pairwise = \xs ->
     len = List.len xs
 
@@ -85,6 +63,4 @@ pairs = \xs ->
         List.map bs \b -> (a, b)
 
 joinSets : List (Set a) -> Set a
-joinSets = \xs ->
-    List.walk xs (Set.empty {}) \acc, set ->
-        Set.union acc set
+joinSets = \xs -> List.walk xs (Set.empty {}) Set.union
