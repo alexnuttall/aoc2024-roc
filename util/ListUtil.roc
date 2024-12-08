@@ -5,11 +5,9 @@ module [
     countBy,
     counts,
     partition,
-    partitionWithIndex,
-    slidingWindow,
     pairwise,
     pairs,
-    joinSets
+    joinSets,
 ]
 
 import Internal exposing [upsertDict, id, unwrap]
@@ -40,6 +38,7 @@ partition = \xs, predicate ->
         else
             (true, List.append false x)
 
+pairwise : List a -> List (a, a)
 pairwise = \xs ->
     len = List.len xs
 
