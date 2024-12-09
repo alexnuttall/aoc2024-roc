@@ -3,7 +3,6 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import util.DictUtil
 import util.ListUtil
@@ -58,9 +57,6 @@ countUniqueAntinodes = \matrix, resonateWithinBounds ->
     |> ListUtil.joinSets
     |> Set.len
 
-part1 : Str -> Result Str _
-part1 = \input -> parse input |> countUniqueAntinodes resonateOnce |> Num.toStr |> Ok
-
 resonateRecurring : Bounds -> Resonance
 resonateRecurring = \bounds ->
     \{ a, b } ->
@@ -75,7 +71,7 @@ resonateRecurring = \bounds ->
         loop [] a { x: a.x - b.x, y: a.y - b.y }
         |> List.concat (loop [] b { x: b.x - a.x, y: b.y - a.y })
 
-part2 : Str -> Result Str _
+part1 = \input -> parse input |> countUniqueAntinodes resonateOnce |> Num.toStr |> Ok
 part2 = \input -> parse input |> countUniqueAntinodes resonateRecurring |> Num.toStr |> Ok
 
 exampleData =

@@ -3,7 +3,6 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 import util.ListUtil
@@ -18,8 +17,8 @@ append = \list, block, count -> List.concat list (blockList block count)
 
 toBlocks : List U8 -> List Block
 toBlocks = \input ->
-    initList = List.len input * 9 |> List.withCapacity
-    List.walkWithIndex input initList \blocks, sizeCh, i ->
+    init = List.len input * 9 |> List.withCapacity
+    List.walkWithIndex input init \blocks, sizeCh, i ->
         size = sizeCh - '0'
         when i % 2 is
             0 -> append blocks (Data ((Num.toU16 i) // 2)) size
@@ -70,9 +69,6 @@ checksum = \blocks ->
 solve1 : List U8 -> U64
 solve1 = \input -> toBlocks input |> compact |> checksum
 
-part1 : Str -> Result Str _
-part1 = \input -> Str.toUtf8 input |> solve1 |> Num.toStr |> Ok
-
 File : { id : U16, size : U8 }
 FileIndex : [Remaining File, Deleted U8]
 Gap : { size : U8, insertions : List File }
@@ -108,15 +104,15 @@ fillGap = \gap, index, files ->
             insertions = List.append gap.insertions file
             deleteFileIdx = Num.toU64 file.id
 
-            moved = {
+            next = {
                 files: List.set files deleteFileIdx (Deleted file.size),
                 gap: { size: remainingGap, insertions },
             }
 
             if remainingGap == 0 then
-                moved
+                next
             else
-                fillGap moved.gap index moved.files
+                fillGap next.gap index next.files
 
         Err NoCandidate -> { gap, files }
 
@@ -146,7 +142,7 @@ diskSequenceToBlocks = \{ gaps, files } ->
 solve2 : List U8 -> U64
 solve2 = \input -> toDiskSequence input |> compactFiles |> diskSequenceToBlocks |> checksum
 
-part2 : Str -> Result Str _
+part1 = \input -> Str.toUtf8 input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> Str.toUtf8 input |> solve2 |> Num.toStr |> Ok
 
 exampleData = "2333133121414131402"

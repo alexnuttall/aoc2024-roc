@@ -3,7 +3,6 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import util.StrUtil
 import util.ResultUtil
@@ -52,10 +51,7 @@ solve = \input, enableConcat ->
             [first, .. as rest] -> loop rest first target |> Result.withDefault 0
             _ -> 0
 
-part1 : Str -> Result Str _
 part1 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.false |> Num.toStr |> Ok
-
-part2 : Str -> Result Str _
 part2 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.true |> Num.toStr |> Ok
 
 exampleData =

@@ -3,17 +3,13 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 
 # parse : Str -> Result _ _
 parse = \str -> str
 
-part1 : Str -> Result Str _
 part1 = \input -> Ok input
-
-part2 : Str -> Result Str _
 part2 = \input -> Ok input
 
 exampleData =

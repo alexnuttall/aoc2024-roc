@@ -3,7 +3,6 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 

@@ -3,7 +3,6 @@ app [part1, part2] {
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
-
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 
@@ -61,7 +60,6 @@ patrol = \grid, current, orientation, seen ->
 
         Err _ -> Ok seen
 
-part1 : Str -> Result Str _
 part1 = \str ->
     grid = parse str
     start = try findGuard grid
@@ -73,7 +71,6 @@ part1 = \str ->
     |> Num.toStr
     |> Ok
 
-part2 : Str -> Result Str _
 part2 = \str ->
     grid = parse str
     start = try findGuard grid
