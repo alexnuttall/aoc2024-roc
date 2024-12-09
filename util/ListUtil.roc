@@ -8,6 +8,7 @@ module [
     pairwise,
     pairs,
     joinSets,
+    splitAlternating
 ]
 
 import Internal exposing [upsertDict, id, unwrap]
@@ -63,3 +64,11 @@ pairs = \xs ->
 
 joinSets : List (Set a) -> Set a
 joinSets = \xs -> List.walk xs (Set.empty {}) Set.union
+
+splitAlternating : List a -> (List a, List a)
+splitAlternating = \xs ->
+    init = List.len xs // 2 + 1 |> List.withCapacity
+    List.walkWithIndex xs (init, init) \(even, odd), x, i ->
+        when i % 2 is
+            0 -> (List.append even x, odd)
+            _ -> (even, List.append odd x)

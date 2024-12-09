@@ -11,10 +11,10 @@ import answers.A exposing [answers]
 
 Frequency : U8
 Matrix : List (List Frequency)
-Pos : (I16, I16)
+Pos : { x : I16, y : I16 }
 NodeGroups : List (List Pos)
 Bounds : { height : I16, width : I16 }
-Resonance : (Pos, Pos) -> List Pos
+Resonance : { a : Pos, b : Pos } -> List Pos
 
 parse : Str -> Matrix
 parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
@@ -25,7 +25,7 @@ findNodes = \matrix ->
         List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
             when cell is
                 '.' -> rowDict
-                f -> Dict.insert rowDict (Num.toI16 x, Num.toI16 y) f
+                f -> Dict.insert rowDict { x: Num.toI16 x, y: Num.toI16 y } f
         |> Dict.insertAll dict
     |> DictUtil.invert
     |> Dict.values
@@ -37,49 +37,46 @@ getBounds = \matrix -> {
 }
 
 inBounds : Bounds -> (Pos -> Bool)
-inBounds = \{ height, width } -> \(x, y) -> x >= 0 && x < width && y >= 0 && y < height
+inBounds = \{ height, width } -> \{ x, y } -> x >= 0 && x < width && y >= 0 && y < height
 
-antinodesOnce : Bounds -> Resonance
-antinodesOnce = \bounds ->
-    \((ax, ay), (bx, by)) ->
-        [
-            (ax - (ax - bx) * 2, ay - (ay - by) * 2),
-            (bx - (bx - ax) * 2, by - (by - ay) * 2),
-        ]
-        |> List.keepIf (inBounds bounds)
+resonateOnce : Bounds -> Resonance
+resonateOnce = \bounds ->
+    \{ a, b } ->
+        nextA = { x: a.x - (a.x - b.x) * 2, y: a.y - (a.y - b.y) * 2 }
+        nextB = { x: b.x - (b.x - a.x) * 2, y: b.y - (b.y - a.y) * 2 }
+
+        [nextA, nextB] |> List.keepIf (inBounds bounds)
 
 countUniqueAntinodes : Matrix, (Bounds -> Resonance) -> U64
-countUniqueAntinodes = \matrix, resonateWithBounds ->
+countUniqueAntinodes = \matrix, resonateWithinBounds ->
     findNodes matrix
     |> List.map \group ->
         ListUtil.pairs group
-        |> List.joinMap (getBounds matrix |> resonateWithBounds)
+        |> List.joinMap \(a, b) ->
+            { a, b } |> (getBounds matrix |> resonateWithinBounds)
         |> Set.fromList
     |> ListUtil.joinSets
     |> Set.len
 
 part1 : Str -> Result Str _
-part1 = \input -> parse input |> countUniqueAntinodes antinodesOnce |> Num.toStr |> Ok
+part1 = \input -> parse input |> countUniqueAntinodes resonateOnce |> Num.toStr |> Ok
 
-antinodesRecurring : Bounds -> Resonance
-antinodesRecurring = \bounds ->
-    \((ax, ay), (bx, by)) ->
-        deltaA = (ax - bx, ay - by)
-        deltaB = (bx - ax, by - ay)
+resonateRecurring : Bounds -> Resonance
+resonateRecurring = \bounds ->
+    \{ a, b } ->
+        loop = \acc, { x, y }, delta ->
+            next = { x: x - delta.x, y: y - delta.y }
 
-        resonateDirection = \acc, (x, y), (xDelta, yDelta) ->
-            next = (x - xDelta, y - yDelta)
             if (inBounds bounds) next then
-                List.append acc next
-                |> resonateDirection next (xDelta, yDelta)
+                List.append acc next |> loop next delta
             else
                 acc
 
-        resonateDirection [] (ax, ay) deltaA
-        |> List.concat (resonateDirection [] (bx, by) deltaB)
+        loop [] a { x: a.x - b.x, y: a.y - b.y }
+        |> List.concat (loop [] b { x: b.x - a.x, y: b.y - a.y })
 
 part2 : Str -> Result Str _
-part2 = \input -> parse input |> countUniqueAntinodes antinodesRecurring |> Num.toStr |> Ok
+part2 = \input -> parse input |> countUniqueAntinodes resonateRecurring |> Num.toStr |> Ok
 
 exampleData =
     """

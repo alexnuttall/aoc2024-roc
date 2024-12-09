@@ -59,8 +59,7 @@ patrol = \grid, current, orientation, seen ->
             else
                 patrol grid target orientation nextSeen
 
-        Err _ ->
-            seen |> Ok
+        Err _ -> Ok seen
 
 part1 : Str -> Result Str _
 part1 = \str ->

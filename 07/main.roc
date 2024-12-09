@@ -26,21 +26,18 @@ parse = \str ->
 concat : U64, U64 -> U64
 concat = \a, b ->
     getMulti = \multiplier, rem ->
-        nextRem = Num.divTrunc rem 10
+        nextRem = rem // 10
         if nextRem == 0 then multiplier else getMulti (multiplier * 10) nextRem
 
-    getMulti 10 b |> Num.mul a |> Num.add b
+    a * getMulti 10 b + b
 
-solve : Input, Bool -> Result Str _
+solve : Input, Bool -> U64
 solve = \input, enableConcat ->
     loop = \rem, total, target ->
         when rem is
-            [] ->
-                if total == target then Ok target else Err Missed
-
-            _ if total > target ->
-                Err Missed
-
+            [] if total == target -> Ok target
+            [] -> Err Missed
+            _ if total > target -> Err Missed
             [a, .. as next] ->
                 loop next (total + a) target
                 |> Result.onErr \_ -> loop next (total * a) target
@@ -49,20 +46,17 @@ solve = \input, enableConcat ->
                         loop next (concat total a) target
                     else
                         Err Missed
-                |> Result.onErr \_ -> Err Missed
 
     ListUtil.sumBy input \(target, xs) ->
         when xs is
             [first, .. as rest] -> loop rest first target |> Result.withDefault 0
             _ -> 0
-    |> Num.toStr
-    |> Ok
 
 part1 : Str -> Result Str _
-part1 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.false
+part1 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.false |> Num.toStr |> Ok
 
 part2 : Str -> Result Str _
-part2 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.true
+part2 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.true |> Num.toStr |> Ok
 
 exampleData =
     """
