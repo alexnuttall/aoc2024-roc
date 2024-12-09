@@ -1,5 +1,5 @@
-app [main] {
-    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
+app [part1, part2] {
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
@@ -7,8 +7,6 @@ app [main] {
 import "./input.txt" as inputData : Str
 import util.ListUtil
 import answers.A exposing [answers]
-
-main = Task.ok {}
 
 parse : Str -> List (List U64)
 parse = \input ->
@@ -47,6 +45,9 @@ solve2 = \input ->
         |> List.prepend report
         |> List.any isValid
 
+part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
+part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
+
 exampleData =
     """
     7 6 4 2 1
@@ -58,17 +59,17 @@ exampleData =
     """
 
 expect
-    actual = parse exampleData |> solve1
-    actual == 2
+    actual = part1 exampleData
+    actual == Ok "2"
 
 expect
-    actual = parse inputData |> solve1
-    actual == answers.day02.part1
+    actual = part1 inputData
+    actual == Ok answers.day02.part1
 
 expect
-    actual = parse exampleData |> solve2
-    actual == 4
+    actual = part2 exampleData
+    actual == Ok "4"
 
 expect
-    actual = parse inputData |> solve2
-    actual == answers.day02.part2
+    actual = part2 inputData
+    actual == Ok answers.day02.part2

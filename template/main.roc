@@ -1,5 +1,5 @@
-app [main] {
-    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
+app [part1, part2] {
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
@@ -7,34 +7,31 @@ app [main] {
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 
-main = Task.ok {}
-
-# parse : Str -> Str
+# parse : Str -> Result _ _
 parse = \str -> str
 
-# solve1 : Str -> Str
-solve1 = \x -> x
+part1 : Str -> Result Str _
+part1 = \input -> Ok input
 
-# solve2 : Str -> Str
-solve2 = \x -> x
+part2 : Str -> Result Str _
+part2 = \input -> Ok input
 
 exampleData =
     """
-
     """
 
 # expect
-#     actual = parse exampleData |> solve1
-#     actual == Ok 0
+#     actual = part1 exampleData
+#     actual == Ok "3749"
 
 # expect
-#     actual = parse inputData |> solve1
-#     actual == Ok 0
+#     actual = part1 inputData
+#     actual == Ok answers.day07.part1
 
 # expect
-#     actual = parse exampleData |> solve2
-#     actual == Ok 0
+#     actual = part2 exampleData
+#     actual == Ok "11387"
 
 # expect
-#     actual = parse inputData |> solve2
-#     actual == Ok 0
+#     actual = part2 inputData
+#     actual == Ok answers.day07.part2

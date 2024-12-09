@@ -1,5 +1,5 @@
-app [main] {
-    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
+app [part1, part2] {
+    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
     answers: "../answers/answers.roc",
 }
@@ -9,8 +9,6 @@ import util.StrUtil
 import util.ListUtil
 import util.ResultUtil
 import answers.A exposing [answers]
-
-main = Task.ok {}
 
 Input : (List U64, List U64)
 
@@ -30,6 +28,9 @@ solve1 = \(ls, rs) ->
 solve2 : Input -> U64
 solve2 = \(ls, rs) -> ListUtil.sumBy ls \l -> l * ListUtil.countIn rs l
 
+part1 = \input -> parse input |> Result.map solve1 |> Result.map Num.toStr
+part2 = \input -> parse input |> Result.map solve2 |> Result.map Num.toStr
+
 exampleData =
     """
     3   4
@@ -41,17 +42,17 @@ exampleData =
     """
 
 expect
-    actual = parse exampleData |> Result.map solve1
-    actual == Ok 11
+    actual = part1 exampleData
+    actual == Ok "11"
 
 expect
-    actual = parse inputData |> Result.map solve1
+    actual = part1 inputData
     actual == Ok answers.day01.part1
 
 expect
-    actual = parse exampleData |> Result.map solve2
-    actual == Ok 31
+    actual = part2 exampleData
+    actual == Ok "31"
 
 expect
-    actual = parse inputData |> Result.map solve2
+    actual = part2 inputData
     actual == Ok answers.day01.part2
