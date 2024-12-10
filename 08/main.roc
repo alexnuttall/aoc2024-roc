@@ -21,11 +21,10 @@ parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
 findNodes : Matrix -> NodeGroups
 findNodes = \matrix ->
     List.walkWithIndex matrix (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
+        List.walkWithIndex row dict \rowDict, cell, x ->
             when cell is
                 '.' -> rowDict
                 f -> Dict.insert rowDict { x: Num.toI16 x, y: Num.toI16 y } f
-        |> Dict.insertAll dict
     |> DictUtil.invert
     |> Dict.values
 

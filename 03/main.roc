@@ -8,19 +8,19 @@ import util.ListUtil
 import util.ResultUtil
 import answers.A exposing [answers]
 
-parseMuls : Str -> List (U64, U64)
+parseMuls : Str -> List (U32, U32)
 parseMuls = \str ->
     Str.splitOn str "mul("
     |> List.keepOks \segment ->
         when Str.splitFirst segment ")" is
             Ok { before } ->
                 when Str.splitOn before "," is
-                    [a, b] -> ResultUtil.toTuple (Str.toU64 a) (Str.toU64 b)
+                    [a, b] -> ResultUtil.toTuple (Str.toU32 a) (Str.toU32 b)
                     _ -> Err NonMul
 
             Err _ -> Err NonMul
 
-solve1 : Str -> U64
+solve1 : Str -> U32
 solve1 = \input -> parseMuls input |> ListUtil.sumBy \(a, b) -> a * b
 
 stripInactive : Str -> Str
@@ -35,7 +35,7 @@ stripInactive = \str ->
             |> Str.joinWith ""
             |> Str.withPrefix initial
 
-solve2 : Str -> U64
+solve2 : Str -> U32
 solve2 = \input -> stripInactive input |> solve1
 
 part1 = \input -> solve1 input |> Num.toStr |> Ok

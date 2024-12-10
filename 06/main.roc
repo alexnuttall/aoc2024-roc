@@ -7,16 +7,15 @@ import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 
 Grid : Dict Pos U8
-Pos : (I64, I64)
+Pos : (I16, I16)
 Orientation : [N, E, S, W]
 
 parse : Str -> Grid
 parse = \str -> Str.splitOn str "\n"
     |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
         Str.toUtf8 row
-        |> List.walkWithIndex (Dict.empty {}) \rowDict, cell, x ->
-            Dict.insert rowDict (Num.toI64 x, Num.toI64 y) cell
-        |> Dict.insertAll dict
+        |> List.walkWithIndex dict \rowDict, cell, x ->
+            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) cell
 
 findGuard : Grid -> Result Pos [NotFound]
 findGuard = \grid ->

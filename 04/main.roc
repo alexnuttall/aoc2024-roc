@@ -7,16 +7,16 @@ import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 
 Grid : List (List U8)
-GridDict : Dict (I32, I32) U8
+GridDict : Dict (I16, I16) U8
 Word : List U8
 
 parse : Str -> Grid
 parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
 
-directions : List (I32, I32)
+directions : List (I16, I16)
 directions = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
 
-getWords : GridDict, I32, I32 -> List Word
+getWords : GridDict, I16, I16 -> List Word
 getWords = \dict, x, y ->
     List.keepOks directions \(dx, dy) ->
         List.range { start: At 1, end: Length 3 }
@@ -26,9 +26,8 @@ getWords = \dict, x, y ->
 toDict : List (List U8) -> GridDict
 toDict = \grid ->
     List.walkWithIndex grid (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
-            Dict.insert rowDict (Num.toI32 x, Num.toI32 y) cell
-        |> Dict.insertAll dict
+        List.walkWithIndex row dict \rowDict, cell, x ->
+            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) cell
 
 solve1 : Grid -> U64
 solve1 = \grid ->
@@ -36,14 +35,14 @@ solve1 = \grid ->
     List.walkWithIndex grid 0 \count, row, y ->
         List.walkWithIndex row 0 \rowCount, cell, x ->
             if cell == 'X' then
-                getWords dict (Num.toI32 x) (Num.toI32 y)
+                getWords dict (Num.toI16 x) (Num.toI16 y)
                 |> List.countIf \word -> word == ['M', 'A', 'S']
                 |> Num.add rowCount
             else
                 rowCount
         |> Num.add count
 
-getXWords : GridDict, I32, I32 -> Result (List U8) _
+getXWords : GridDict, I16, I16 -> Result (List U8) _
 getXWords = \dict, x, y ->
     [(-1, -1), (1, -1), (1, 1), (-1, 1)]
     |> List.mapTry \(dx, dy) ->
@@ -72,7 +71,7 @@ solve2 = \grid ->
     List.walkWithIndex grid 0 \count, row, y ->
         List.walkWithIndex row 0 \rowCount, cell, x ->
             if cell == 'A' then
-                getXWords dict (Num.toI32 x) (Num.toI32 y)
+                getXWords dict (Num.toI16 x) (Num.toI16 y)
                 |> \words ->
                     when Result.map words isXmas is
                         Ok Xmas -> rowCount + 1

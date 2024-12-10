@@ -11,9 +11,8 @@ parse = \str ->
     Str.toUtf8 str
     |> List.splitOn '\n'
     |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row (Dict.empty {}) \rowDict, cell, x ->
+        List.walkWithIndex row dict \rowDict, cell, x ->
             Dict.insert rowDict (Num.toI16 x, Num.toI16 y) (cell - '0')
-        |> Dict.insertAll dict
 
 neighbours = \(x, y) -> [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
 
@@ -30,11 +29,10 @@ searchGoals = \map, fromPos, fromHeight ->
         [fromPos]
     else
         open map fromPos fromHeight
-        |> List.joinMap \pos ->
-            searchGoals map pos (fromHeight + 1)
+        |> List.joinMap \pos -> searchGoals map pos (fromHeight + 1)
 
 findStartingPoints = \map ->
-    Dict.keepIf map \(_, v) -> v == 0
+    Dict.keepIf map \(_, h) -> h == 0
     |> Dict.keys
 
 solve1 = \map ->
@@ -47,11 +45,7 @@ searchPaths = \map, fromPos, fromHeight ->
         1
     else
         open map fromPos fromHeight
-        |> ListUtil.sumBy \pos ->
-            searchPaths
-                map
-                pos
-                (fromHeight + 1)
+        |> ListUtil.sumBy \pos -> searchPaths map pos (fromHeight + 1)
 
 solve2 = \map ->
     findStartingPoints map
@@ -60,7 +54,7 @@ solve2 = \map ->
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
 
-mediumExampleData =
+exampleData =
     """
     89010123
     78121874
@@ -73,7 +67,7 @@ mediumExampleData =
     """
 
 expect
-    actual = part1 mediumExampleData
+    actual = part1 exampleData
     actual == Ok "36"
 
 expect
@@ -81,7 +75,7 @@ expect
     actual == Ok answers.day10.part1
 
 expect
-    actual = part2 mediumExampleData
+    actual = part2 exampleData
     actual == Ok "81"
 
 expect

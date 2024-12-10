@@ -9,7 +9,7 @@ import util.ResultUtil
 import util.ListUtil
 import answers.A exposing [answers]
 
-Page : U64
+Page : U8
 Rule : (Page, Page)
 Update : List Page
 Input : { rules : List Rule, updates : List Update }
@@ -22,12 +22,12 @@ parse = \str ->
         Str.splitOn ruleBlock "\n"
         |> try List.mapTry \line ->
             (aStr, bStr) = try StrUtil.splitTwo line "|"
-            ResultUtil.toTuple (Str.toU64 aStr) (Str.toU64 bStr)
+            ResultUtil.toTuple (Str.toU8 aStr) (Str.toU8 bStr)
 
     updates =
         Str.splitOn updateBlock "\n"
         |> try List.mapTry \line ->
-            Str.splitOn line "," |> List.mapTry Str.toU64
+            Str.splitOn line "," |> List.mapTry Str.toU8
 
     Ok { rules, updates }
 
@@ -50,6 +50,7 @@ mid = \update ->
     |> Num.divTrunc 2
     |> \m -> List.get update m
     |> Result.withDefault 0
+    |> Num.toU64
 
 solve1 : Input -> U64
 solve1 = \{ updates, rules } ->
