@@ -7,28 +7,32 @@ import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 import util.DictUtil
 
-parse = \str -> Str.splitOn str " " |> List.mapTry Str.toU64
+parse = \str -> Str.splitOn str " " |> List.mapTry Str.toU128
 
 incDict = \dict, n, x -> DictUtil.upsert dict n (\present -> present + x) x
-decDict = \dict, n, x -> DictUtil.upsert dict n (\present -> present - x) 0
+decDict = \dict, n, x -> DictUtil.upsert dict n (\present -> Num.subSaturated present x) 0
 
-toDict = \input -> List.walk input (Dict.empty {}) \dict, n -> incDict dict n 1
+toDict : List U128 -> Dict U128 U128
+toDict = \input -> List.walk input (Dict.empty {}) \dict, n -> incDict dict n 1u128
 
+toRevDigits : U128 -> List U8
 toRevDigits = \n ->
     loop = \acc, rem ->
         nextRem = rem // 10
         if nextRem == 0 then
-            List.append acc rem
+            List.append acc (Num.toU8 rem)
         else
-            List.append acc (rem % 10)
+            List.append acc (rem % 10 |> Num.toU8)
             |> loop nextRem
 
     loop [] n
 
+revDigitsToNum : List U8 -> U128
 revDigitsToNum = \ds ->
-    List.walkWithIndex ds 0 \sum, d, i ->
-        sum + (d * Num.powInt 10 i)
+    List.walkWithIndex ds 0u128 \sum, d, i ->
+        sum + ((Num.toU128 d) * Num.powInt 10 (Num.toU128 i))
 
+split : List U8, U64 -> List U128
 split = \ds, len ->
     { before, others } = List.splitAt ds (len // 2)
     [
@@ -36,6 +40,7 @@ split = \ds, len ->
         revDigitsToNum before,
     ]
 
+apply : U128 -> List U128
 apply = \n ->
     if n == 0 then
         [1]
@@ -48,6 +53,7 @@ apply = \n ->
         else
             [n * 2024]
 
+solve : List U128, U128 -> U128
 solve = \input, iterMax ->
     loop = \d, iter ->
         if iter == iterMax then
