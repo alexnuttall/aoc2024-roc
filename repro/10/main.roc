@@ -58,3 +58,24 @@ solve2 = \map ->
 
 part1 = \input -> parse input |> solve1 |> Num.toStr
 part2 = \input -> parse input |> solve2 |> Num.toStr
+
+
+exampleData =
+    """
+    89010123
+    78121874
+    87430965
+    96549874
+    45678903
+    32019012
+    01329801
+    10456732
+    """
+
+expect
+    actual = part1 exampleData
+    actual == "36"
+
+expect
+    actual = part2 exampleData
+    actual == "81"

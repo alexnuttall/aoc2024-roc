@@ -1,7 +1,12 @@
-app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
+app [main] {
+    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
 }
 import "./input.txt" as inputData : Str
+import pf.Stdout
+
+main =
+    Stdout.line! (part1 inputData)
+    Stdout.line! (part2 inputData)
 
 parse : Str -> Grid
 parse = \str ->
@@ -147,8 +152,8 @@ lateralHeadings = \heading ->
         N | S -> (W, E)
         E | W -> (N, S)
 
-part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
-part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
+part1 = \input -> parse input |> solve1 |> Num.toStr
+part2 = \input -> parse input |> solve2 |> Num.toStr
 
 example =
     """
@@ -166,8 +171,8 @@ example =
 
 expect
     actual = part1 example
-    actual == Ok "1930"
+    actual == "1930"
 
 expect
     actual = part2 example
-    actual == Ok "1206"
+    actual == "1206"
