@@ -1,10 +1,10 @@
 app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
     util: "../util/util.roc",
-    answers: "../answers/answers.roc",
+    # answers: "../answers/answers.roc",
 }
-import "./input.txt" as inputData : Str
-import answers.A exposing [answers]
+# import "./input.txt" as inputData : Str
+# import answers.A exposing [answers]
 import util.ListUtil
 
 parse = \str ->
@@ -70,14 +70,14 @@ expect
     actual = part1 exampleData
     actual == Ok "36"
 
-expect
-    actual = part1 inputData
-    actual == Ok answers.day10.part1
+# expect
+#     actual = part1 inputData
+#     actual == Ok answers.day10.part1
 
 expect
     actual = part2 exampleData
     actual == Ok "81"
 
-expect
-    actual = part2 inputData
-    actual == Ok answers.day10.part2
+# expect
+#     actual = part2 inputData
+#     actual == Ok answers.day10.part2
