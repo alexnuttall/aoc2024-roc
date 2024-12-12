@@ -1,11 +1,7 @@
 app [part1, part2] {
     pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
-    util: "../util/util.roc",
-    answers: "../answers/answers.roc",
 }
 import "./input.txt" as inputData : Str
-import answers.A exposing [answers]
-import util.ListUtil
 
 parse : Str -> Grid
 parse = \str ->
@@ -23,8 +19,9 @@ Fence : (Heading, Pos)
 solve1 : Grid -> U64
 solve1 = \input ->
     getRegions input
-    |> ListUtil.sumBy \region ->
+    |> List.map \region ->
         perimeter region |> Set.len |> Num.mul (Set.len region)
+    |> List.sum
 
 getRegions : Grid -> List (Set Pos)
 getRegions = \input ->
@@ -93,8 +90,9 @@ perimeter = \region ->
 solve2 : Grid -> U64
 solve2 = \input ->
     getRegions input
-    |> ListUtil.sumBy \region ->
+    |> List.map \region ->
         perimeter region |> groupSides |> List.len |> Num.mul (Set.len region)
+    |> List.sum
 
 groupSides : Set Fence -> List (Set Fence)
 groupSides = \fences ->
@@ -171,13 +169,5 @@ expect
     actual == Ok "1930"
 
 expect
-    actual = part1 inputData
-    actual == Ok answers.day12.part1
-
-expect
     actual = part2 example
     actual == Ok "1206"
-
-expect
-    actual = part2 inputData
-    actual == Ok answers.day12.part2

@@ -1,11 +1,13 @@
-app [part1, part2] {
-    pf: platform "https://github.com/ostcar/roc-aoc-platform/releases/download/v0.0.8/lhFfiil7mQXDOB6wN-jduJQImoT8qRmoiNHDB4DVF9s.tar.br",
-    util: "../util/util.roc",
-    answers: "../answers/answers.roc",
+app [main] {
+    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
 }
+
+import pf.Stdout
 import "./input.txt" as inputData : Str
-import answers.A exposing [answers]
-import util.ListUtil
+
+main =
+    Stdout.line! (part1 inputData)
+    Stdout.line! (part2 inputData)
 
 parse = \str ->
     Str.toUtf8 str
@@ -37,47 +39,22 @@ findStartingPoints = \map ->
 
 solve1 = \map ->
     findStartingPoints map
-    |> ListUtil.sumBy \start ->
+    |> List.map \start ->
         searchGoals map start 0 |> Set.fromList |> Set.len
+    |> List.sum
 
 searchPaths = \map, fromPos, fromHeight ->
     if fromHeight == 9 then
         1
     else
         open map fromPos fromHeight
-        |> ListUtil.sumBy \pos -> searchPaths map pos (fromHeight + 1)
+        |> List.map \pos -> searchPaths map pos (fromHeight + 1)
+        |> List.sum
 
 solve2 = \map ->
     findStartingPoints map
-    |> ListUtil.sumBy \start -> searchPaths map start 0
+    |> List.map \start -> searchPaths map start 0
+    |> List.sum
 
-part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
-part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
-
-exampleData =
-    """
-    89010123
-    78121874
-    87430965
-    96549874
-    45678903
-    32019012
-    01329801
-    10456732
-    """
-
-expect
-    actual = part1 exampleData
-    actual == Ok "36"
-
-expect
-    actual = part1 inputData
-    actual == Ok answers.day10.part1
-
-expect
-    actual = part2 exampleData
-    actual == Ok "81"
-
-expect
-    actual = part2 inputData
-    actual == Ok answers.day10.part2
+part1 = \input -> parse input |> solve1 |> Num.toStr
+part2 = \input -> parse input |> solve2 |> Num.toStr
