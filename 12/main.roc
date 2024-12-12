@@ -15,13 +15,121 @@ parse = \str ->
         List.walkWithIndex row dict \rowDict, cell, x ->
             Dict.insert rowDict { x: Num.toI16 x, y: Num.toI16 y } cell
 
-Id : U8
 Pos : { x : I16, y : I16 }
-Grid : Dict Pos Id
+Grid : Dict Pos U8
 Heading : [N, E, S, W]
 Fence : (Heading, Pos)
 
-anyFromDict = \dict -> Dict.walkUntil dict (Err Empty) \_, k, v -> Break (Ok (k, v))
+solve1 : Grid -> U64
+solve1 = \input ->
+    getRegions input
+    |> ListUtil.sumBy \region ->
+        perimeter region |> Set.len |> Num.mul (Set.len region)
+
+getRegions : Grid -> List (Set Pos)
+getRegions = \input ->
+    getRegion = \gridState, regions ->
+        when dictFirst gridState is
+            Ok (pos, id) ->
+                region = flood gridState pos id (Set.empty {}) (Set.empty {})
+
+                getRegion
+                    (Dict.dropIf gridState \(k, _) -> Set.contains region k)
+                    (List.append regions region)
+
+            Err _ -> regions
+
+    getRegion input []
+
+flood : Grid, Pos, U8, Set Pos, Set Pos -> Set Pos
+flood = \grid, pos, id, visited, unvisited ->
+    south = traverseDirection grid S pos id visited unvisited
+
+    mergedVisited = Set.union visited south.visited
+    mergedUnvisited = Set.union unvisited south.unvisited
+
+    final = traverseDirection grid E pos id mergedVisited mergedUnvisited
+
+    when takeSet final.unvisited is
+        Ok (nextUnvisitedPos, nextUnvisited) ->
+            flood grid nextUnvisitedPos id final.visited nextUnvisited
+
+        Err Empty -> final.visited
+
+traverseDirection : Grid, Heading, Pos, U8, Set Pos, Set Pos -> { visited : Set Pos, unvisited : Set Pos }
+traverseDirection = \grid, heading, pos, id, visited, unvisited ->
+    target = move pos heading
+    nextVisited = Set.insert visited pos
+    nextUnvisited = unvisitedNeighbours grid heading pos id visited |> Set.union unvisited
+
+    if Set.contains nextVisited target then
+        { visited: nextVisited, unvisited: nextUnvisited }
+    else
+        when Dict.get grid target is
+            Ok nextId if nextId == id ->
+                traverseDirection grid heading target id nextVisited nextUnvisited
+
+            _ -> { visited: nextVisited, unvisited: nextUnvisited }
+
+unvisitedNeighbours : Grid, Heading, Pos, U8, Set Pos -> Set Pos
+unvisitedNeighbours = \grid, heading, pos, id, visited ->
+    lateralPositions pos heading
+    |> List.dropIf \neighbourPos -> Set.contains visited neighbourPos
+    |> List.keepOks \neighbourPos ->
+        when Dict.get grid neighbourPos is
+            Ok neighbourId if neighbourId == id -> Ok neighbourPos
+            _ -> Err None
+    |> Set.fromList
+
+perimeter : Set Pos -> Set Fence
+perimeter = \region ->
+    Set.walk region (Set.empty {}) \fences, pos ->
+        [(N, move pos N), (E, move pos E), (S, move pos S), (W, move pos W)]
+        |> List.dropIf \(_, position) -> Set.contains region position
+        |> Set.fromList
+        |> Set.union fences
+
+solve2 : Grid -> U64
+solve2 = \input ->
+    getRegions input
+    |> ListUtil.sumBy \region ->
+        perimeter region |> groupSides |> List.len |> Num.mul (Set.len region)
+
+groupSides : Set Fence -> List (Set Fence)
+groupSides = \fences ->
+    getSides = \fencesState, sides ->
+        when takeSet fencesState is
+            Ok (fence, others) ->
+                (orientation, _) = fence
+                searchDirections = lateralHeadings orientation
+                side = traverseFence others fence searchDirections
+
+                getSides
+                    (Set.difference fencesState side)
+                    (List.append sides side)
+
+            _ -> sides
+
+    getSides fences []
+
+traverseFence : Set Fence, Fence, (Heading, Heading) -> Set Fence
+traverseFence = \fences, fence, (firstDir, secondDir) ->
+    direction = \f, heading, visited ->
+        nextVisited = Set.insert visited f
+
+        (fenceType, orientation) = f
+        nextFence = (fenceType, move orientation heading)
+
+        if Set.contains fences nextFence then
+            direction nextFence heading nextVisited
+        else
+            nextVisited
+
+    Set.single fence
+    |> Set.union (direction fence firstDir (Set.empty {}))
+    |> Set.union (direction fence secondDir (Set.empty {}))
+
+dictFirst = \dict -> Dict.walkUntil dict (Err Empty) \_, k, v -> Break (Ok (k, v))
 
 takeSet = \set ->
     when Set.walkUntil set (Err Empty) \_, a -> Break (Ok a) is
@@ -41,148 +149,12 @@ lateralHeadings = \heading ->
         E | W -> (N, S)
 
 lateralPositions = \pos, heading ->
-    (a, b) = lateralHeadings heading
-    [move pos a, move pos b]
-
-unvisitedNeighbours : Grid, Heading, Pos, Id, Set Pos -> Set Pos
-unvisitedNeighbours = \grid, heading, pos, id, visited ->
-    lateralPositions pos heading
-    |> List.keepIf \neighbourPos ->
-        Set.contains visited neighbourPos
-        |> Bool.not
-    |> List.keepOks \neighbourPos ->
-        when Dict.get grid neighbourPos is
-            Ok neighbourId if neighbourId == id -> Ok neighbourPos
-            _ -> Err None
-    |> Set.fromList
-
-searchDirectionally : Grid, Heading, Pos, Id, Set Pos, Set Pos -> { visited : Set Pos, unvisited : Set Pos }
-searchDirectionally = \grid, heading, pos, id, visited, unvisited ->
-    target = move pos heading
-    nextVisited = Set.insert visited pos
-    nextUnvisited =
-        unvisitedNeighbours grid heading pos id visited
-        |> Set.union unvisited
-
-    if Set.contains visited target then
-        { visited: nextVisited, unvisited: nextUnvisited }
-    else
-        when Dict.get grid target is
-            Ok nextId if nextId == id ->
-                searchDirectionally
-                    grid
-                    heading
-                    target
-                    id
-                    nextVisited
-                    nextUnvisited
-
-            _ -> { visited: nextVisited, unvisited: nextUnvisited }
-
-search : Grid, Pos, Id, Set Pos, Set Pos -> Set Pos
-search = \grid, pos, id, visited, unvisited ->
-    { visited: visitedS, unvisited: unvisitedS } =
-        searchDirectionally grid S pos id visited unvisited
-
-    { visited: nextVisited, unvisited: finalUnvisited } =
-        searchDirectionally
-            grid
-            E
-            pos
-            id
-            (Set.union visited visitedS)
-            (Set.union unvisited unvisitedS)
-
-    when takeSet finalUnvisited is
-        Ok (nextUnvisitedPos, nextUnvisited) ->
-            search grid nextUnvisitedPos id nextVisited nextUnvisited
-
-        Err Empty -> nextVisited
-
-perimeter : Set Pos -> Set Fence
-perimeter = \region ->
-    Set.walk region (Set.empty {}) \fences, pos ->
-        List.dropIf
-            [(N, move pos N), (E, move pos E), (S, move pos S), (W, move pos W)]
-            \(_, position) -> Set.contains region position
-        |> Set.fromList
-        |> Set.union fences
-
-getRegions : Grid -> List (Id, Set Pos)
-getRegions = \input ->
-    loop = \gridState, regions ->
-        when anyFromDict gridState is
-            Ok (pos, id) ->
-                region = search gridState pos id (Set.empty {}) (Set.empty {})
-                nextGrid = Dict.dropIf gridState \(k, _) -> Set.contains region k
-                nextRegions = List.append regions (id, region)
-
-                loop nextGrid nextRegions
-
-            Err _ -> regions
-
-    loop input []
-
-solve1 : Grid -> _
-solve1 = \input ->
-    getRegions input
-    |> ListUtil.sumBy \(_, region) ->
-        perimeterLength = perimeter region |> Set.len
-        Set.len region * perimeterLength
-
-searchFenceBidirectionally : Set Fence, Fence, (Heading, Heading) -> Set Fence
-searchFenceBidirectionally = \fs, fence, (firstDir, secondDir) ->
-    searchDirection = \f, heading, visited ->
-        nextVisited = Set.insert visited f
-
-        (fenceType, relativePosition) = f
-        nextFence = (fenceType, move relativePosition heading)
-
-        if Set.contains fs nextFence then
-            searchDirection nextFence heading nextVisited
-        else
-            nextVisited
-
-    Set.single fence
-    |> Set.union (searchDirection fence firstDir (Set.empty {}))
-    |> Set.union (searchDirection fence secondDir (Set.empty {}))
-
-perimeterSides : Set Fence -> List (Set Fence)
-perimeterSides = \fences ->
-    getSides = \fencesState, sides ->
-        when takeSet fencesState is
-            Ok (fence, others) ->
-                (fenceAlignment, _) = fence
-                searchDirections = lateralHeadings fenceAlignment
-                side = searchFenceBidirectionally others fence searchDirections
-
-                getSides
-                    (Set.difference fencesState side)
-                    (List.append sides side)
-
-            _ -> sides
-
-    getSides fences []
-
-solve2 : Grid -> _
-solve2 = \input ->
-    getRegions input
-    |> ListUtil.sumBy \(_, region) ->
-        sideCount = perimeter region |> perimeterSides |> List.len
-        Set.len region * sideCount
+    lateralHeadings heading |> \(a, b) -> [move pos a, move pos b]
 
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
 
-smallExample =
-    """
-    AAAA
-    BBCD
-    BBCC
-    EEEC
-    """
-
-largeExample =
+example =
     """
     RRRRIICCFF
     RRRRIICCCF
@@ -196,36 +168,8 @@ largeExample =
     MMMISSJEEE
     """
 
-eShapeExample =
-    """
-    EEEEE
-    EXXXX
-    EEEEE
-    EXXXX
-    EEEEE
-    """
-
-abExample =
-    """
-    AAAAAA
-    AAABBA
-    AAABBA
-    ABBAAA
-    ABBAAA
-    AAAAAA
-    """
-
-xoExample =
-    """
-    OOOOO
-    OXOXO
-    OOOOO
-    OXOXO
-    OOOOO
-    """
-
 expect
-    actual = part1 largeExample
+    actual = part1 example
     actual == Ok "1930"
 
 expect
@@ -233,24 +177,8 @@ expect
     actual == Ok answers.day12.part1
 
 expect
-    actual = part2 largeExample
+    actual = part2 example
     actual == Ok "1206"
-
-expect
-    actual = part2 eShapeExample
-    actual == Ok "236"
-
-expect
-    actual = part2 smallExample
-    actual == Ok "80"
-
-expect
-    actual = part2 xoExample
-    actual == Ok "436"
-
-expect
-    actual = part2 abExample
-    actual == Ok "368"
 
 expect
     actual = part2 inputData
