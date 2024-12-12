@@ -73,11 +73,12 @@ traverseDirection = \grid, heading, pos, id, visited, unvisited ->
 
 unvisitedNeighbours : Grid, Heading, Pos, U8, Set Pos -> Set Pos
 unvisitedNeighbours = \grid, heading, pos, id, visited ->
-    lateralPositions pos heading
-    |> List.dropIf \neighbourPos -> Set.contains visited neighbourPos
-    |> List.keepOks \neighbourPos ->
-        when Dict.get grid neighbourPos is
-            Ok neighbourId if neighbourId == id -> Ok neighbourPos
+    lateralHeadings heading
+    |> \(left, right) -> [move pos left, move pos right]
+    |> List.dropIf \lateral -> Set.contains visited lateral
+    |> List.keepOks \lateral ->
+        when Dict.get grid lateral is
+            Ok neighbourId if neighbourId == id -> Ok lateral
             _ -> Err None
     |> Set.fromList
 
@@ -147,9 +148,6 @@ lateralHeadings = \heading ->
     when heading is
         N | S -> (W, E)
         E | W -> (N, S)
-
-lateralPositions = \pos, heading ->
-    lateralHeadings heading |> \(a, b) -> [move pos a, move pos b]
 
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
