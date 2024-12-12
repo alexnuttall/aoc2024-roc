@@ -34,10 +34,10 @@ getRegions = \input ->
                 region = flood gridState pos id (Set.empty {}) (Set.empty {})
 
                 getRegion
-                    (Dict.dropIf gridState \(k, _) -> Set.contains region k)
+                    (Dict.dropIf gridState \(position, _id) -> Set.contains region position)
                     (List.append regions region)
 
-            Err _ -> regions
+            Err Empty -> regions
 
     getRegion input []
 
@@ -109,7 +109,7 @@ groupSides = \fences ->
                     (Set.difference fencesState side)
                     (List.append sides side)
 
-            _ -> sides
+            Err Empty -> sides
 
     getSides fences []
 
