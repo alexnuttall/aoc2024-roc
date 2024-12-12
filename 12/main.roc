@@ -19,7 +19,7 @@ Id : U8
 Pos : { x : I16, y : I16 }
 Grid : Dict Pos Id
 Heading : [N, E, S, W]
-Fence : [Northern Pos, Eastern Pos]
+Fence : Heading Pos
 
 anyFromDict = \dict ->
     Dict.walkUntil dict (Err Empty) \_, k, v -> Break (Ok (k, v))
@@ -103,10 +103,10 @@ perimeter = \region ->
             \(_, pos) -> Set.contains region pos |> Bool.not
         |> List.map \(neighbourHeading, _) ->
             when neighbourHeading is
-                N -> Northern { x, y }
-                E -> Eastern { x, y }
-                S -> Northern { x, y: y + 1 }
-                W -> Eastern { x: x - 1, y }
+                N -> N { x, y }
+                E -> E { x, y }
+                S -> S { x, y: y + 1 }
+                W -> W { x: x - 1, y }
         |> Set.fromList
         |> Set.union fences
 
@@ -132,6 +132,7 @@ solve1 = \input ->
         perimeterLength = perimeter region |> Set.len
         Set.len region * perimeterLength
 
+perimeterSides : Set Fence -> List (Set Fence)
 perimeterSides = \fences ->
     searchFenceDirectionally = \fs, fencePos, fenceType, heading, visited ->
         nextVisited = Set.insert visited (fenceType fencePos)
