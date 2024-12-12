@@ -1,12 +1,11 @@
 app [main] {
     pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.17.0/lZFLstMUCUvd5bjnnpYromZJXkQUrdhbva4xdBInicE.tar.br",
 }
-import "./input.txt" as inputData : Str
 import pf.Stdout
 
 main =
-    Stdout.line! (part1 inputData)
-    Stdout.line! (part2 inputData)
+    Stdout.line! (part1 example)
+    Stdout.line! (part2 example)
 
 parse : Str -> Grid
 parse = \str ->
