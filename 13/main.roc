@@ -48,10 +48,7 @@ solve = \{ a, b, prize }, add ->
     n = (py - m * ay) // by
 
     if
-        (m > 0)
-        && (n > 0)
-        && (m * ax + n * bx == px)
-        && (m * ay + n * by == py)
+        (m * ax + n * bx == px) && (m * ay + n * by == py)
     then
         Ok { m, n }
     else
