@@ -7,7 +7,7 @@ data2 = "0123456789"
 
 main =
     map = parse data2
-
+    
     starts = findStartingPoints map
     # this is always [(0, 0)] - even when the bug occurs
     # but hardcoding this stops the bug for some reason
