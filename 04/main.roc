@@ -10,9 +10,6 @@ Grid : List (List U8)
 GridDict : Dict (I16, I16) U8
 Word : List U8
 
-parse : Str -> Grid
-parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
-
 directions : List (I16, I16)
 directions = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
 
@@ -79,6 +76,9 @@ solve2 = \grid ->
             else
                 rowCount
         |> Num.add count
+
+parse : Str -> Grid
+parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
 
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok

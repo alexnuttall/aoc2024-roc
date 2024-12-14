@@ -8,6 +8,12 @@ import util.ListUtil
 import util.ResultUtil
 import answers.A exposing [answers]
 
+solve1 : Str -> U32
+solve1 = \input -> parseMuls input |> ListUtil.sumBy \(a, b) -> a * b
+
+solve2 : Str -> U32
+solve2 = \input -> stripInactive input |> solve1
+
 parseMuls : Str -> List (U32, U32)
 parseMuls = \str ->
     Str.splitOn str "mul("
@@ -20,9 +26,6 @@ parseMuls = \str ->
 
             Err _ -> Err NonMul
 
-solve1 : Str -> U32
-solve1 = \input -> parseMuls input |> ListUtil.sumBy \(a, b) -> a * b
-
 stripInactive : Str -> Str
 stripInactive = \str ->
     when Str.splitOn str "don't()" is
@@ -34,9 +37,6 @@ stripInactive = \str ->
                     _ -> Err Final
             |> Str.joinWith ""
             |> Str.withPrefix initial
-
-solve2 : Str -> U32
-solve2 = \input -> stripInactive input |> solve1
 
 part1 = \input -> solve1 input |> Num.toStr |> Ok
 part2 = \input -> solve2 input |> Num.toStr |> Ok

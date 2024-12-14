@@ -6,6 +6,7 @@ app [part1, part2] {
 import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 import util.StrUtil
+import util.ListUtil
 
 Pair : { x : I64, y : I64 }
 
@@ -14,6 +15,28 @@ Machine : {
     b : Pair,
     prize : Pair,
 }
+
+solve : List Machine, I64 -> I64
+solve = \machines, add ->
+    List.keepOks machines \m -> solveMachine m add
+    |> ListUtil.sumBy \{ m, n } -> 3 * m + n
+
+solveMachine : Machine, I64 -> Result { m : I64, n : I64 } [NoSolution]
+solveMachine = \{ a, b, prize }, add ->
+    { x: ax, y: ay } = a
+    { x: bx, y: by } = b
+    px = prize.x + add
+    py = prize.y + add
+
+    m = (px * by - bx * py) // (ax * by - bx * ay)
+    n = (py - m * ay) // by
+
+    if
+        (m * ax + n * bx == px) && (m * ay + n * by == py)
+    then
+        Ok { m, n }
+    else
+        Err NoSolution
 
 parse : Str -> Result (List Machine) _
 parse = \str ->
@@ -37,37 +60,8 @@ parseLine = \line, op ->
 
     Ok { x, y }
 
-solve : Machine, I64 -> Result { m : I64, n : I64 } [NoSolution]
-solve = \{ a, b, prize }, add ->
-    { x: ax, y: ay } = a
-    { x: bx, y: by } = b
-    px = prize.x + add
-    py = prize.y + add
-
-    m = (px * by - bx * py) // (ax * by - bx * ay)
-    n = (py - m * ay) // by
-
-    if
-        (m * ax + n * bx == px) && (m * ay + n * by == py)
-    then
-        Ok { m, n }
-    else
-        Err NoSolution
-
-solve1 : List Machine -> I64
-solve1 = \machines ->
-    List.keepOks machines \m -> solve m 0
-    |> List.map \{ m, n } -> 3 * m + n
-    |> List.sum
-
-solve2 : List Machine -> I64
-solve2 = \machines ->
-    List.keepOks machines \m -> solve m 10000000000000
-    |> List.map \{ m, n } -> 3 * m + n
-    |> List.sum
-
-part1 = \input -> parse input |> Result.map solve1 |> Result.map Num.toStr
-part2 = \input -> parse input |> Result.map solve2 |> Result.map Num.toStr
+part1 = \input -> try parse input |> \in -> solve in 0 |> Num.toStr |> Ok
+part2 = \input -> try parse input |> \in -> solve in 10000000000000 |> Num.toStr |> Ok
 
 exampleData =
     """

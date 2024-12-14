@@ -15,9 +15,6 @@ NodeGroups : List (List Pos)
 Bounds : { height : I16, width : I16 }
 Resonance : { a : Pos, b : Pos } -> List Pos
 
-parse : Str -> Matrix
-parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
-
 findNodes : Matrix -> NodeGroups
 findNodes = \matrix ->
     List.walkWithIndex matrix (Dict.empty {}) \dict, row, y ->
@@ -69,6 +66,9 @@ resonateRecurring = \bounds ->
 
         loop [] a { x: a.x - b.x, y: a.y - b.y }
         |> List.concat (loop [] b { x: b.x - a.x, y: b.y - a.y })
+
+parse : Str -> Matrix
+parse = \str -> Str.toUtf8 str |> List.splitOn '\n'
 
 part1 = \input -> parse input |> countUniqueAntinodes resonateOnce |> Num.toStr |> Ok
 part2 = \input -> parse input |> countUniqueAntinodes resonateRecurring |> Num.toStr |> Ok

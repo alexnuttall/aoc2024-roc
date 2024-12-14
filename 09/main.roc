@@ -9,20 +9,20 @@ import util.ListUtil
 
 Block : [Free, Data U16]
 
-blockList : Block, Int a -> List Block
-blockList = \block, count -> List.repeat block (Num.toU64 count)
+solve1 : List U8 -> U64
+solve1 = \input -> toBlocks input |> compact |> checksum
 
-append : List Block, Block, U8 -> List Block
-append = \list, block, count -> List.concat list (blockList block count)
+compact : List Block -> List Block
+compact = \blocks ->
+    loop = \bs, start, end ->
+        when chompFinalBlock bs end is
+            Err Empty -> bs
+            Ok { id, endIndex: newEnd } ->
+                when findFreeIndex bs start newEnd is
+                    Err NotFound -> List.sublist bs { start: 0, len: end + 1 }
+                    Ok i -> List.set bs i (Data id) |> loop (i + 1) newEnd
 
-toBlocks : List U8 -> List Block
-toBlocks = \input ->
-    init = List.len input * 9 |> List.withCapacity
-    List.walkWithIndex input init \blocks, sizeCh, i ->
-        size = sizeCh - '0'
-        when i % 2 is
-            0 -> append blocks (Data ((Num.toU16 i) // 2)) size
-            _ -> append blocks Free size
+    loop blocks 0 (List.len blocks - 1)
 
 findFreeIndex : List Block, U64, U64 -> Result U64 [NotFound]
 findFreeIndex = \blocks, start, end ->
@@ -46,18 +46,6 @@ chompFinalBlock = \blocks, from ->
 
     backwards from
 
-compact : List Block -> List Block
-compact = \blocks ->
-    loop = \bs, start, end ->
-        when chompFinalBlock bs end is
-            Err Empty -> bs
-            Ok { id, endIndex: newEnd } ->
-                when findFreeIndex bs start newEnd is
-                    Err NotFound -> List.sublist bs { start: 0, len: end + 1 }
-                    Ok i -> List.set bs i (Data id) |> loop (i + 1) newEnd
-
-    loop blocks 0 (List.len blocks - 1)
-
 checksum : List Block -> U64
 checksum = \blocks ->
     List.mapWithIndex blocks \block, i ->
@@ -66,13 +54,57 @@ checksum = \blocks ->
             Free -> 0
     |> List.sum
 
-solve1 : List U8 -> U64
-solve1 = \input -> toBlocks input |> compact |> checksum
+toBlocks : List U8 -> List Block
+toBlocks = \input ->
+    init = List.len input * 9 |> List.withCapacity
+    List.walkWithIndex input init \blocks, sizeCh, i ->
+        size = sizeCh - '0'
+        when i % 2 is
+            0 -> append blocks (Data ((Num.toU16 i) // 2)) size
+            _ -> append blocks Free size
+
+blockList : Block, Int a -> List Block
+blockList = \block, count -> List.repeat block (Num.toU64 count)
+
+append : List Block, Block, U8 -> List Block
+append = \list, block, count -> List.concat list (blockList block count)
 
 File : { id : U16, size : U8 }
 FileIndex : [Remaining File, Deleted U8]
 Gap : { size : U8, insertions : List File }
 DiskSequence : { files : List FileIndex, gaps : List Gap }
+
+solve2 : List U8 -> U64
+solve2 = \input -> toDiskSequence input |> compactFiles |> diskSequenceToBlocks |> checksum
+
+compactFiles : DiskSequence -> DiskSequence
+compactFiles = \{ gaps, files } ->
+    List.walkWithIndex gaps { gaps, files } \state, gap, index ->
+        { gap: filled, files: nextFiles } = fillGap gap index state.files
+        {
+            gaps: List.set state.gaps index filled,
+            files: nextFiles,
+        }
+
+fillGap : Gap, U64, List FileIndex -> { gap : Gap, files : List FileIndex }
+fillGap = \gap, index, files ->
+    when findGapCandidate files gap.size index is
+        Ok file ->
+            remainingGap = gap.size - file.size
+            insertions = List.append gap.insertions file
+            deleteFileIdx = Num.toU64 file.id
+
+            next = {
+                files: List.set files deleteFileIdx (Deleted file.size),
+                gap: { size: remainingGap, insertions },
+            }
+
+            if remainingGap == 0 then
+                next
+            else
+                fillGap next.gap index next.files
+
+        Err NoCandidate -> { gap, files }
 
 toDiskSequence : List U8 -> DiskSequence
 toDiskSequence = \input ->
@@ -96,35 +128,6 @@ findGapCandidate = \files, size, minIndex ->
                 _ -> Continue { state & index: state.index - 1 }
     |> .candidate
 
-fillGap : Gap, U64, List FileIndex -> { gap : Gap, files : List FileIndex }
-fillGap = \gap, index, files ->
-    when findGapCandidate files gap.size index is
-        Ok file ->
-            remainingGap = gap.size - file.size
-            insertions = List.append gap.insertions file
-            deleteFileIdx = Num.toU64 file.id
-
-            next = {
-                files: List.set files deleteFileIdx (Deleted file.size),
-                gap: { size: remainingGap, insertions },
-            }
-
-            if remainingGap == 0 then
-                next
-            else
-                fillGap next.gap index next.files
-
-        Err NoCandidate -> { gap, files }
-
-compactFiles : DiskSequence -> DiskSequence
-compactFiles = \{ gaps, files } ->
-    List.walkWithIndex gaps { gaps, files } \state, gap, index ->
-        { gap: filled, files: nextFiles } = fillGap gap index state.files
-        {
-            gaps: List.set state.gaps index filled,
-            files: nextFiles,
-        }
-
 diskSequenceToBlocks : DiskSequence -> List Block
 diskSequenceToBlocks = \{ gaps, files } ->
     List.map2 files (List.append gaps { size: 0, insertions: [] }) \fileIndex, gap ->
@@ -138,9 +141,6 @@ diskSequenceToBlocks = \{ gaps, files } ->
 
         original |> List.concat inserted |> List.concat gapBlocks
     |> List.join
-
-solve2 : List U8 -> U64
-solve2 = \input -> toDiskSequence input |> compactFiles |> diskSequenceToBlocks |> checksum
 
 part1 = \input -> Str.toUtf8 input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> Str.toUtf8 input |> solve2 |> Num.toStr |> Ok

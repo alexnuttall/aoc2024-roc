@@ -7,24 +7,16 @@ import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 import util.ListUtil
 
-parse : Str -> Grid
-parse = \str ->
-    Str.toUtf8 str
-    |> List.splitOn '\n'
-    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row dict \rowDict, cell, x ->
-            Dict.insert rowDict { x: Num.toI16 x, y: Num.toI16 y } cell
-
 Pos : { x : I16, y : I16 }
 Grid : Dict Pos U8
 Heading : [N, E, S, W]
 Fence : (Heading, Pos)
 
-solve1 : Grid -> U64
-solve1 = \input ->
-    getRegions input
-    |> ListUtil.sumBy \region ->
-        perimeter region |> Set.len |> Num.mul (Set.len region)
+solve : Grid, (Set Pos -> U64) -> U64
+solve = \input, cost -> getRegions input |> ListUtil.sumBy cost
+
+solve1 = \region -> perimeter region |> Set.len |> Num.mul (Set.len region)
+solve2 = \region -> perimeter region |> groupSides |> List.len |> Num.mul (Set.len region)
 
 getRegions : Grid -> List (Set Pos)
 getRegions = \input ->
@@ -90,12 +82,6 @@ perimeter = \region ->
         |> Set.fromList
         |> Set.union fences
 
-solve2 : Grid -> U64
-solve2 = \input ->
-    getRegions input
-    |> ListUtil.sumBy \region ->
-        perimeter region |> groupSides |> List.len |> Num.mul (Set.len region)
-
 groupSides : Set Fence -> List (Set Fence)
 groupSides = \fences ->
     getSides = \fencesState, sides ->
@@ -149,8 +135,16 @@ lateralHeadings = \heading ->
         N | S -> (W, E)
         E | W -> (N, S)
 
-part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
-part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
+parse : Str -> Grid
+parse = \str ->
+    Str.toUtf8 str
+    |> List.splitOn '\n'
+    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
+        List.walkWithIndex row dict \rowDict, cell, x ->
+            Dict.insert rowDict { x: Num.toI16 x, y: Num.toI16 y } cell
+
+part1 = \input -> parse input |> \in -> solve in solve1 |> Num.toStr |> Ok
+part2 = \input -> parse input |> \in -> solve in solve2 |> Num.toStr |> Ok
 
 example =
     """

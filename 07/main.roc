@@ -12,24 +12,6 @@ import answers.A exposing [answers]
 Input : List Equation
 Equation : (U64, List U64)
 
-parse : Str -> Result Input _
-parse = \str ->
-    Str.splitOn str "\n"
-    |> List.mapTry \line ->
-        (targetStr, numsString) = try StrUtil.splitTwo line ": "
-
-        ResultUtil.toTuple
-            (Str.toU64 targetStr)
-            (Str.splitOn numsString " " |> List.mapTry Str.toU64)
-
-concat : U64, U64 -> U64
-concat = \a, b ->
-    getMulti = \multiplier, rem ->
-        nextRem = rem // 10
-        if nextRem == 0 then multiplier else getMulti (multiplier * 10) nextRem
-
-    a * getMulti 10 b + b
-
 solve : Input, Bool -> U64
 solve = \input, enableConcat ->
     loop = \rem, total, target ->
@@ -50,6 +32,24 @@ solve = \input, enableConcat ->
         when xs is
             [first, .. as rest] -> loop rest first target |> Result.withDefault 0
             _ -> 0
+
+concat : U64, U64 -> U64
+concat = \a, b ->
+    getMulti = \multiplier, rem ->
+        nextRem = rem // 10
+        if nextRem == 0 then multiplier else getMulti (multiplier * 10) nextRem
+
+    a * getMulti 10 b + b
+
+parse : Str -> Result Input _
+parse = \str ->
+    Str.splitOn str "\n"
+    |> List.mapTry \line ->
+        (targetStr, numsString) = try StrUtil.splitTwo line ": "
+
+        ResultUtil.toTuple
+            (Str.toU64 targetStr)
+            (Str.splitOn numsString " " |> List.mapTry Str.toU64)
 
 part1 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.false |> Num.toStr |> Ok
 part2 = \input -> parse input |> Result.try \parsed -> solve parsed Bool.true |> Num.toStr |> Ok

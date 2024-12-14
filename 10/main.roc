@@ -7,14 +7,17 @@ import "./input.txt" as inputData : Str
 import answers.A exposing [answers]
 import util.ListUtil
 
-parse = \str ->
-    Str.toUtf8 str
-    |> List.splitOn '\n'
-    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
-        List.walkWithIndex row dict \rowDict, cell, x ->
-            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) (cell - '0')
+solve1 = \map ->
+    findStartingPoints map
+    |> ListUtil.sumBy \start ->
+        searchGoals map start 0 |> Set.fromList |> Set.len
 
-neighbours = \(x, y) -> [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
+searchGoals = \map, fromPos, fromHeight ->
+    if fromHeight == 9 then
+        [fromPos]
+    else
+        open map fromPos fromHeight
+        |> List.joinMap \pos -> searchGoals map pos (fromHeight + 1)
 
 open = \map, fromPos, fromHeight ->
     neighbours fromPos
@@ -24,21 +27,13 @@ open = \map, fromPos, fromHeight ->
         |> Num.subSaturated fromHeight
         |> Bool.isEq 1
 
-searchGoals = \map, fromPos, fromHeight ->
-    if fromHeight == 9 then
-        [fromPos]
-    else
-        open map fromPos fromHeight
-        |> List.joinMap \pos -> searchGoals map pos (fromHeight + 1)
-
 findStartingPoints = \map ->
     Dict.keepIf map \(_, h) -> h == 0
     |> Dict.keys
 
-solve1 = \map ->
+solve2 = \map ->
     findStartingPoints map
-    |> ListUtil.sumBy \start ->
-        searchGoals map start 0 |> Set.fromList |> Set.len
+    |> ListUtil.sumBy \start -> searchPaths map start 0
 
 searchPaths = \map, fromPos, fromHeight ->
     if fromHeight == 9 then
@@ -47,9 +42,14 @@ searchPaths = \map, fromPos, fromHeight ->
         open map fromPos fromHeight
         |> ListUtil.sumBy \pos -> searchPaths map pos (fromHeight + 1)
 
-solve2 = \map ->
-    findStartingPoints map
-    |> ListUtil.sumBy \start -> searchPaths map start 0
+neighbours = \(x, y) -> [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
+
+parse = \str ->
+    Str.toUtf8 str
+    |> List.splitOn '\n'
+    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
+        List.walkWithIndex row dict \rowDict, cell, x ->
+            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) (cell - '0')
 
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok

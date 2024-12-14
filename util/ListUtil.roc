@@ -8,13 +8,13 @@ module [
     pairwise,
     pairs,
     joinSets,
-    splitAlternating
+    splitAlternating,
 ]
 
 import Internal exposing [upsertDict, id, unwrap]
 
 sumBy : List a, (a -> Num b) -> Num b
-sumBy = \xs, f -> List.map xs f |> List.sum
+sumBy = \xs, f -> List.walk xs 0 \sum, x -> sum + (f x)
 
 countIn : List a, a -> U64 where a implements Eq
 countIn = \xs, y -> List.countIf xs \x -> x == y

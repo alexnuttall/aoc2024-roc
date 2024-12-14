@@ -14,23 +14,6 @@ Rule : (Page, Page)
 Update : List Page
 Input : { rules : List Rule, updates : List Update }
 
-parse : Str -> Result Input _
-parse = \str ->
-    (ruleBlock, updateBlock) = try StrUtil.splitTwo str "\n\n"
-
-    rules =
-        Str.splitOn ruleBlock "\n"
-        |> try List.mapTry \line ->
-            (aStr, bStr) = try StrUtil.splitTwo line "|"
-            ResultUtil.toTuple (Str.toU8 aStr) (Str.toU8 bStr)
-
-    updates =
-        Str.splitOn updateBlock "\n"
-        |> try List.mapTry \line ->
-            Str.splitOn line "," |> List.mapTry Str.toU8
-
-    Ok { rules, updates }
-
 validate : Update, List Rule -> Bool
 validate = \update, rules ->
     List.all rules \(a, b) ->
@@ -72,6 +55,23 @@ solve2 = \{ updates, rules } ->
     List.dropIf updates \update -> validate update rules
     |> List.map \update -> sort update rules
     |> ListUtil.sumBy mid
+
+parse : Str -> Result Input _
+parse = \str ->
+    (ruleBlock, updateBlock) = try StrUtil.splitTwo str "\n\n"
+
+    rules =
+        Str.splitOn ruleBlock "\n"
+        |> try List.mapTry \line ->
+            (aStr, bStr) = try StrUtil.splitTwo line "|"
+            ResultUtil.toTuple (Str.toU8 aStr) (Str.toU8 bStr)
+
+    updates =
+        Str.splitOn updateBlock "\n"
+        |> try List.mapTry \line ->
+            Str.splitOn line "," |> List.mapTry Str.toU8
+
+    Ok { rules, updates }
 
 part1 = \input -> parse input |> Result.map solve1 |> Result.map Num.toStr
 part2 = \input -> parse input |> Result.map solve2 |> Result.map Num.toStr

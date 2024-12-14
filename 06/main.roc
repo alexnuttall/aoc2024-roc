@@ -10,13 +10,6 @@ Grid : Dict Pos U8
 Pos : (I16, I16)
 Orientation : [N, E, S, W]
 
-parse : Str -> Grid
-parse = \str -> Str.splitOn str "\n"
-    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
-        Str.toUtf8 row
-        |> List.walkWithIndex dict \rowDict, cell, x ->
-            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) cell
-
 findGuard : Grid -> Result Pos [NotFound]
 findGuard = \grid ->
     Dict.walkUntil grid (Err NotFound) \state, pos, cell ->
@@ -85,6 +78,13 @@ part2 = \str ->
             Err Looped -> count + 1
     |> Num.toStr
     |> Ok
+
+parse : Str -> Grid
+parse = \str -> Str.splitOn str "\n"
+    |> List.walkWithIndex (Dict.empty {}) \dict, row, y ->
+        Str.toUtf8 row
+        |> List.walkWithIndex dict \rowDict, cell, x ->
+            Dict.insert rowDict (Num.toI16 x, Num.toI16 y) cell
 
 exampleData =
     """

@@ -7,12 +7,23 @@ import "./input.txt" as inputData : Str
 import util.ListUtil
 import answers.A exposing [answers]
 
-parse : Str -> List (List U64)
-parse = \input ->
-    Str.splitOn input "\n"
-    |> List.map \line ->
-        Str.splitOn line " "
-        |> List.keepOks Str.toU64
+solve1 : List (List U64) -> U64
+solve1 = \input -> List.countIf input isValid
+
+solve2 : List (List U64) -> U64
+solve2 = \input ->
+    List.countIf input \report ->
+        List.mapWithIndex report \_, i ->
+            List.dropAt report i
+        |> List.prepend report
+        |> List.any isValid
+
+isValid : List U64 -> Bool
+isValid = \report ->
+    ListUtil.pairwise report
+    |> List.mapTry classifyJump
+    |> Result.try checkDirectionality
+    |> Result.isOk
 
 classifyJump : (U64, U64) -> Result [LT, GT, EQ] [Invalid]
 classifyJump = \(a, b) ->
@@ -26,23 +37,12 @@ checkDirectionality = \directions ->
         1 -> Ok Valid
         _ -> Err Invalid
 
-isValid : List U64 -> Bool
-isValid = \report ->
-    ListUtil.pairwise report
-    |> List.mapTry classifyJump
-    |> Result.try checkDirectionality
-    |> Result.isOk
-
-solve1 : List (List U64) -> U64
-solve1 = \input -> List.countIf input isValid
-
-solve2 : List (List U64) -> U64
-solve2 = \input ->
-    List.countIf input \report ->
-        List.mapWithIndex report \_, i ->
-            List.dropAt report i
-        |> List.prepend report
-        |> List.any isValid
+parse : Str -> List (List U64)
+parse = \input ->
+    Str.splitOn input "\n"
+    |> List.map \line ->
+        Str.splitOn line " "
+        |> List.keepOks Str.toU64
 
 part1 = \input -> parse input |> solve1 |> Num.toStr |> Ok
 part2 = \input -> parse input |> solve2 |> Num.toStr |> Ok
