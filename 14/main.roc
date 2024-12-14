@@ -16,27 +16,15 @@ solve1 = \robots, size ->
     |> safetyScore size
 
 moveSeconds : Robot, I64, GridSize -> Coord
-moveSeconds = \robot, seconds, size ->
-    vec = { x: robot.v.x * seconds, y: robot.v.y * seconds }
-    projected = { x: robot.p.x + vec.x, y: robot.p.y + vec.y }
-    { x: wrap projected.x size.w, y: wrap projected.y size.h }
+moveSeconds = \robot, seconds, size -> {
+    x: (robot.p.x + seconds * robot.v.x) |> mod size.w,
+    y: (robot.p.y + seconds * robot.v.y) |> mod size.h,
+}
 
-wrap : I64, I64 -> I64
-wrap = \n, limit ->
-    under = n < 0
-    over = n >= limit
-
-    if !under && !over then
-        n
-    else
-        mod =
-            when n % limit is
-                0 -> -limit
-                nonZero -> nonZero
-        if under then
-            limit + mod
-        else
-            mod
+mod = \n, div ->
+    when n % div is
+        a if a < 0 -> a + div
+        a -> a
 
 safetyScore : List Coord, GridSize -> U64
 safetyScore = \robots, size ->
@@ -54,14 +42,14 @@ safetyScore = \robots, size ->
             { state & nw: state.nw + 1 }
         else
             state
-
     |> \{ se, ne, sw, nw } -> se * ne * sw * nw
 
 solve2 : List Robot -> I64
 solve2 = \robots ->
-    rCount = List.len robots |> Num.toFrac
+    set = Set.fromList robots
+    rCount = Set.len set |> Num.toFrac
     loop = \iter ->
-        rs = List.map robots \robot -> moveSeconds robot iter inputSize
+        rs = Set.map set \robot -> moveSeconds robot iter inputSize
         if isImage rs rCount 0.7 then
             dbg (print rs)
             iter
@@ -69,25 +57,20 @@ solve2 = \robots ->
             loop (iter + 1)
     loop 1
 
-isImage : List Coord, Frac a, Frac a -> Bool
+isImage : Set Coord, Frac a, Frac a -> Bool
 isImage = \robots, rCount, ratio ->
-    List.walk robots 0 \count, robot ->
-        if
-            (
-                neighbours robot
-                |> List.keepIf \n -> List.contains robots n
-                |> List.len
-                |> Num.isGt 0
-            )
-        then
-            count + 1
-        else
-            count
+    Set.walk robots 0 \count, robot ->
+        hasNeighbour =
+            neighbours robot
+            |> List.keepIf \n -> Set.contains robots n
+            |> List.len
+            |> Num.isGt 0
+        if hasNeighbour then count + 1 else count
     |> Num.toFrac
     |> Num.div rCount
     |> Num.isGt ratio
 
-print : List Coord -> Str
+print : Set Coord -> Str
 print = \robots ->
     xRange = List.range { start: At 0, end: At inputSize.w }
     yRange = List.range { start: At 0, end: At inputSize.h }
@@ -95,7 +78,7 @@ print = \robots ->
     List.mapWithIndex yRange \_, y ->
         List.map xRange \x ->
             if
-                List.contains robots { x: Num.toI64 x, y: Num.toI64 y }
+                Set.contains robots { x: Num.toI64 x, y: Num.toI64 y }
             then
                 '#'
             else
