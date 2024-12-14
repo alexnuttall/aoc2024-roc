@@ -28,17 +28,17 @@ mod = \n, div ->
 
 safetyScore : List Coord, GridSize -> U64
 safetyScore = \robots, size ->
-    xMid = size.w // 2
-    yMid = size.h // 2
+    xm = size.w // 2
+    ym = size.h // 2
 
     List.walk robots { se: 0, ne: 0, sw: 0, nw: 0 } \state, { x, y } ->
-        if x > xMid && y > yMid then
+        if x > xm && y > ym then
             { state & se: state.se + 1 }
-        else if x > xMid && y < yMid then
+        else if x > xm && y < ym then
             { state & ne: state.ne + 1 }
-        else if x < xMid && y > yMid then
+        else if x < xm && y > ym then
             { state & sw: state.sw + 1 }
-        else if x < xMid && y < yMid then
+        else if x < xm && y < ym then
             { state & nw: state.nw + 1 }
         else
             state
@@ -72,17 +72,12 @@ isImage = \robots, rCount, ratio ->
 
 print : Set Coord -> Str
 print = \robots ->
-    xRange = List.range { start: At 0, end: At inputSize.w }
-    yRange = List.range { start: At 0, end: At inputSize.h }
+    xRange = List.range { start: At 0i64, end: At inputSize.w }
+    yRange = List.range { start: At 0i64, end: At inputSize.h }
 
-    List.mapWithIndex yRange \_, y ->
+    List.map yRange \y ->
         List.map xRange \x ->
-            if
-                Set.contains robots { x: Num.toI64 x, y: Num.toI64 y }
-            then
-                '#'
-            else
-                '.'
+            if Set.contains robots { x, y } then '#' else '.'
         |> Str.fromUtf8
         |> Result.withDefault ""
     |> Str.joinWith "\n"
