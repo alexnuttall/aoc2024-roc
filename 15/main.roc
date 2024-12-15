@@ -90,18 +90,24 @@ push_double_crate = \{ map, robot }, target_pos, crate_head_pos, heading ->
 get_blocks_lat : Map, Pos, Heading -> [MovableBlocks (List Pos), Immovable]
 get_blocks_lat = \map, crate_head, heading ->
     loop = \acc, pos ->
-        when get_double_cell pos map is
-            Void -> MovableBlocks acc
-            Wall -> Immovable
-            CrateHead ->
-                if pos.x == 2 && heading == W then
-                    Immovable
-                else
-                    loop (List.append acc pos) (move_lat pos heading)
+        next = get_target pos heading
+        after_next = get_target next heading
 
-            x ->
-                dbg (x, heading)
-                Immovable
+        when (get_cell next map, get_cell after_next map) is
+            (Void, CrateHead) -> loop (List.append acc after_next) after_next
+            (Void, Void) -> MovableBlocks acc
+            _ -> Immovable
+    # Void -> MovableBlocks acc
+    # Wall -> Immovable
+    # CrateHead ->
+    #     if pos.x == 2 && heading == W then
+    #         Immovable
+    #     else
+    #         loop (List.append acc pos) (move_lat pos heading)
+
+    # x ->
+    #     dbg (x, heading)
+    #     Immovable
 
     loop [] crate_head
 
@@ -145,11 +151,6 @@ get_double_cell = \pos, map ->
         (Ok CrateHead, Err KeyNotFound) -> CrateTail
         (_, Ok Wall) -> Wall
         _ -> Void
-
-move_lat = \{ x, y }, heading ->
-    when heading is
-        E -> { x: x + 2, y }
-        _ -> { x: x - 2, y }
 
 scale : State -> State
 scale = \{ map, robot } -> { map: scaled_map map, robot: scaled_pos robot }
