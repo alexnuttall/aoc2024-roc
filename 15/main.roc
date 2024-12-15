@@ -65,19 +65,21 @@ solve_2 = \{ state, instructions } ->
 apply_instruction_double_crates : State, Heading -> State
 apply_instruction_double_crates = \state, heading ->
     target_pos = get_target state.robot heading
+    west_pos = w_pos target_pos
 
-    when get_double_cell target_pos state.map is
-        Wall -> state
-        Void -> { state & robot: target_pos }
-        CrateHead -> push_double_crate state target_pos target_pos heading
-        CrateTail -> push_double_crate state target_pos (w_pos target_pos) heading
+    when (get_cell west_pos state.map, get_cell target_pos state.map) is
+        (_, CrateHead) -> push_double_crate state target_pos target_pos heading
+        (CrateHead, Void) -> push_double_crate state target_pos west_pos heading
+        (_, Wall) -> state
+        (_, Void) -> { state & robot: target_pos }
+        _ -> crash "unreachable"
 
 push_double_crate : State, Pos, Pos, Heading -> State
 push_double_crate = \{ map, robot }, target_pos, crate_head_pos, heading ->
     blocks_to_push =
         when heading is
-            N | S -> get_blocks_long map crate_head_pos heading
-            E | W -> get_blocks_lat map crate_head_pos heading
+            N | S -> get_blocks_ns map crate_head_pos heading
+            E | W -> get_blocks_ew map crate_head_pos heading
 
     when blocks_to_push is
         Immovable -> { map, robot }
@@ -87,8 +89,8 @@ push_double_crate = \{ map, robot }, target_pos, crate_head_pos, heading ->
                 robot: target_pos,
             }
 
-get_blocks_lat : Map, Pos, Heading -> [MovableBlocks (List Pos), Immovable]
-get_blocks_lat = \map, crate_head, heading ->
+get_blocks_ew : Map, Pos, Heading -> [MovableBlocks (List Pos), Immovable]
+get_blocks_ew = \map, crate_head, heading ->
     loop = \acc, pos ->
         next = get_target pos heading
         after_next = get_target next heading
@@ -96,23 +98,13 @@ get_blocks_lat = \map, crate_head, heading ->
         when (get_cell next map, get_cell after_next map) is
             (Void, CrateHead) -> loop (List.append acc after_next) after_next
             (Void, Void) -> MovableBlocks acc
+            (Void, Wall) if heading == W -> MovableBlocks acc
             _ -> Immovable
-    # Void -> MovableBlocks acc
-    # Wall -> Immovable
-    # CrateHead ->
-    #     if pos.x == 2 && heading == W then
-    #         Immovable
-    #     else
-    #         loop (List.append acc pos) (move_lat pos heading)
 
-    # x ->
-    #     dbg (x, heading)
-    #     Immovable
+    loop [crate_head] crate_head
 
-    loop [] crate_head
-
-get_blocks_long : Map, Pos, Heading -> [MovableBlocks (List Pos), Immovable]
-get_blocks_long = \map, crate_head, heading ->
+get_blocks_ns : Map, Pos, Heading -> [MovableBlocks (List Pos), Immovable]
+get_blocks_ns = \map, crate_head, heading ->
     loop = \acc, active ->
         when List.mapTry active \pos -> get_next_heads map pos heading is
             Err Wall -> Immovable
@@ -129,33 +121,24 @@ get_next_heads = \map, pos, heading ->
     e = e_pos mid
     w = w_pos mid
 
-    when (get_double_cell mid map, get_cell e map) is
-        (Wall, _) | (_, Wall) -> Err Wall
-        (CrateHead, _) -> Ok [mid]
-        (CrateTail, Void) -> Ok [w]
-        (CrateTail, CrateHead) -> Ok [w, e]
+    when (get_cell w map, get_cell mid map, get_cell e map) is
+        (_, Wall, _) | (_, _, Wall) -> Err Wall
+        (CrateHead, Void, CrateHead) -> Ok [w, e]
+        (CrateHead, Void, Void) -> Ok [w]
+        (_, Void, CrateHead) -> Ok [e]
+        (_, CrateHead, _) -> Ok [mid]
         _ -> Ok []
 
 apply_push_double : Map, List Pos, Heading -> Map
 apply_push_double = \map, to_push, heading ->
-    List.walk to_push map \state, pos ->
+    removed = List.walk to_push map \state, pos ->
         Dict.remove state pos
-        |> Dict.insert (get_target pos heading) CrateHead
 
-get_double_cell : Pos, Map -> [Wall, CrateHead, CrateTail, Void]
-get_double_cell = \pos, map ->
-    content = Dict.get map pos
-    west_content = Dict.get map (w_pos pos)
-    when (west_content, content) is
-        (_, Ok CrateHead) -> CrateHead
-        (Ok CrateHead, Err KeyNotFound) -> CrateTail
-        (_, Ok Wall) -> Wall
-        _ -> Void
+    List.walk to_push removed \state, pos ->
+        Dict.insert state (get_target pos heading) CrateHead
 
-scale : State -> State
 scale = \{ map, robot } -> { map: scaled_map map, robot: scaled_pos robot }
 
-scaled_map : Map -> Map
 scaled_map = \map ->
     init_map = Dict.len map |> Dict.withCapacity
     Dict.walk map init_map \state, pos, el ->
@@ -230,32 +213,7 @@ parse_instructions = \str ->
             '>' -> Ok E
             _ -> Err Ignore
 
-print : Map, Pos -> Str
-print = \map, robot ->
-    { maxX, maxY } = Dict.walk map { maxX: 0, maxY: 0 } \state, pos, _ -> {
-        maxX: if pos.x > state.maxX then pos.x else state.maxX,
-        maxY: if pos.y > state.maxY then pos.y else state.maxY,
-    }
-
-    xRange = List.range { start: At 0, end: At maxX }
-    yRange = List.range { start: At 0, end: At maxY }
-
-    List.map yRange \y ->
-        List.map xRange \x ->
-            if { x, y } == robot then
-                '@'
-            else
-                when Dict.get map { x, y } is
-                    Ok Wall -> '#'
-                    Ok CrateHead -> '['
-                    Err KeyNotFound -> '.'
-        |> Str.fromUtf8
-        |> Result.withDefault ""
-    |> Str.joinWith "\n"
-    |> Str.replaceEach "[." "[]"
-
 part1 = \input -> parse input |> Result.map solve_1 |> Result.map Num.toStr
-# part2 = \input -> parse input |> Result.map solve_2
 part2 = \input -> parse input |> Result.map solve_2 |> Result.map Num.toStr
 
 example_data =
@@ -283,35 +241,18 @@ example_data =
     v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
     """
 
-small_example =
-    """
-    #######
-    #...#.#
-    #.....#
-    #..OO@#
-    #..O..#
-    #.....#
-    #######
-
-    <vv<<^^<<^^
-    """
-
-# expect
-#     actual = part1 example_data
-#     actual == Ok "10092"
-
-# expect
-#     actual = part1 inputData
-#     actual == Ok answers.day15.part1
+expect
+    actual = part1 example_data
+    actual == Ok "10092"
 
 expect
-    actual = part2 small_example
-    actual == Ok "618"
+    actual = part1 inputData
+    actual == Ok answers.day15.part1
 
-# expect
-#     actual = part2 example_data
-#     actual == Ok "11387"
+expect
+    actual = part2 example_data
+    actual == Ok "9021"
 
-# expect
-#     actual = part2 inputData
-#     actual == Ok answers.day07.part2
+expect
+    actual = part2 inputData
+    actual == Ok answers.day15.part2
