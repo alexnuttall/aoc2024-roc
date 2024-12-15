@@ -64,7 +64,7 @@ isImage = \robots, rCount, ratio ->
             neighbours robot
             |> List.keepIf \n -> Set.contains robots n
             |> List.len
-            |> Num.isGt 0
+            |> Num.isPositive
         if hasNeighbour then count + 1 else count
     |> Num.toFrac
     |> Num.div rCount

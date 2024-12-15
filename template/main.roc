@@ -12,7 +12,7 @@ parse = \str -> str
 part1 = \input -> Ok input
 part2 = \input -> Ok input
 
-exampleData =
+example_data =
     """
     """
 
